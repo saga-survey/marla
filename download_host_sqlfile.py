@@ -25,6 +25,7 @@ from textwrap import dedent
 import numpy as np
 from astropy.table import Table
 from astropy import units as u
+from casjobs import CasJobs
 
 
 def get_google_csv_url(key, gid):
@@ -76,7 +77,7 @@ def run_casjob(query, outname):
     
     SAGA_DIR = os.getenv('SAGADIR', os.curdir)
     
-    cjob = casjobs.CasJobs(base_url='http://skyserver.sdss3.org/casjobs/services/jobs.asmx')
+    cjob = CasJobs(base_url='http://skyserver.sdss3.org/casjobs/services/jobs.asmx')
     outfits = os.path.join(SAGA_DIR, outname + '.fits')
 
     # IF FILE DOESN"T ALREADY EXIST, SUBMIT JOB TO CAS
