@@ -22,7 +22,6 @@ __all__ = ['run_query', 'run_casjob', 'construct_sdss_query']
 import time
 import os
 from textwrap import dedent
-import numpy as np
 from astropy.table import Table
 from astropy import units as u
 from casjobs import CasJobs
