@@ -116,9 +116,10 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
 
     query_template = dedent("""
     SELECT  p.objId  as objID,
-    p.ra, p.dec, p.type as phot_sg, p.flags, p.specObjID, 
+    p.ra, p.dec, p.type, dbo.fPhotoTypeN(p.type) as phot_sg, p.flags, p.specObjID, 
     p.modelMag_u as u, p.modelMag_g as g, p.modelMag_r as r,p.modelMag_i as i,p.modelMag_z as z,
     p.modelMagErr_u as u_err, p.modelMagErr_g as g_err, p.modelMagErr_r as r_err,p.modelMagErr_i as i_err,p.modelMagErr_z as z_err,
+    p.psfMag_u as psf_u, p.psfMag_g as psf_g, p.psfMag_r as psf_r, p.psfMag_i as psf_i, p.psfMag_z as psf_z,
     p.extinction_u as Au, p.extinction_g as Ag, p.extinction_r as Ar, p.extinction_i as Ai, p.extinction_z as Az,
     p.fibermag_r, p.fiber2mag_r,
     p.expRad_r, p.expMag_r + 2.5*log10(2*PI()*p.expRad_r*p.expRad_r + 1e-20) as sb_exp_r,
