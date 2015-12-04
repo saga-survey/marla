@@ -3,17 +3,14 @@
 # READ host list, print sql query
 # 
 # USES Dan FM's
-# https://github.com/dfm/casjobs
+#    https://github.com/dfm/casjobs
 #
 # TO RUN CASJOBS, NEED TO GET AN ACCOUNT FROM:
 #    http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx
 #
 # THEN EDIT YOUR .BASH_PROFILE
-#    CASJOBS_WSID='2090870927'   # get your WSID from site above
-#    export CASJOBS_WSID
-#
-#    CASJOBS_PW = 'my password'
-#    export CASJOBS_PW
+#    export CASJOBS_WSID='2090870927'   # get your WSID from site above
+#    export CASJOBS_PW='my password'
 #
 # MG 7/2014
 ##################################################
@@ -21,7 +18,7 @@ __all__ = ['run_query', 'run_casjob', 'construct_sdss_query']
 
 import time
 import os
-from textwrap import dedent
+import re
 from astropy.table import Table
 from astropy import units as u
 from casjobs import CasJobs
@@ -76,7 +73,7 @@ def run_casjob(query, outname):
     
     SAGA_DIR = os.getenv('SAGADIR', os.curdir)
     
-    cjob = CasJobs(base_url='http://skyserver.sdss3.org/casjobs/services/jobs.asmx')
+    cjob = CasJobs(base_url='http://skyserver.sdss.org/casjobs/services/jobs.asmx', request_type='POST')
     outfits = os.path.join(SAGA_DIR, outname + '.fits')
 
     # IF FILE DOESN"T ALREADY EXIST, SUBMIT JOB TO CAS
@@ -114,7 +111,7 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
         The SQL query to send to the SDSS skyserver
     """
 
-    query_template = dedent("""
+    query_template = """
     SELECT  p.objId  as objID,
     p.ra, p.dec, p.type, dbo.fPhotoTypeN(p.type) as phot_sg, p.flags, p.specObjID, 
     p.modelMag_u as u, p.modelMag_g as g, p.modelMag_r as r,p.modelMag_i as i,p.modelMag_z as z,
@@ -142,7 +139,7 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
     WHERE n.objID = p.objID AND (flags & dbo.fPhotoFlags('BINNED1')) != 0
         AND (flags & dbo.fPhotoFlags('SATURATED')) = 0
         AND (flags & dbo.fPhotoFlags('BAD_COUNTS_ERROR')) = 0 
-    """)
+    """
 
     if isinstance(ra, u.Quantity):
         ra = ra.to(u.deg).value
@@ -156,7 +153,9 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
         radarcmin = (radius*u.deg).to(u.arcmin).value
 
     # ``**locals()`` means "use the local variable names to fill the template"
-    return query_template.format(**locals())
+    q = query_template.format(**locals())
+    q = re.sub('\s+', ' ', q).strip()
+    return q
 
 
 if __name__ == '__main__':
