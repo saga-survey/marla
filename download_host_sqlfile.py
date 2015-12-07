@@ -42,6 +42,7 @@ def run_query(flagged_obs_hosts=False):
 
     """
 
+    # RUN EITHER FULL HOST LIST OR JSUT FLAG ZERO HOSTS
     if flagged_obs_hosts:
         url = get_google_csv_url('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
         nsa_col = 'NSA'
@@ -51,6 +52,7 @@ def run_query(flagged_obs_hosts=False):
     
     # READ HOST LIST FROM GOOGLE DOCS
     hostdata = Table.read(url, format='ascii.csv')
+
 
     # FOR EACH HOST, DOWNLOAD SQL QUERY
     for host in hostdata:
@@ -67,14 +69,30 @@ def run_query(flagged_obs_hosts=False):
         run_casjob(qry, 'sql_nsa{}'.format(nid))
 
 
+
 def run_casjob(query, outname):
+    """
+    Run single casjob
+
+    Parameters
+    ----------
+    query : output from construct_sdss_query
+
+    Returns
+    -------
+    Downloads casjob output
+
+    """
+
     if not all(k in os.environ for k in ('CASJOBS_WSID', 'CASJOBS_PW')):
         raise ValueError('You are not setup to run casjobs')
     
     SAGA_DIR = os.getenv('SAGADIR', os.curdir)
     
+    # USES POST 
     cjob = CasJobs(base_url='http://skyserver.sdss.org/casjobs/services/jobs.asmx', request_type='POST')
     outfits = os.path.join(SAGA_DIR, outname + '.fits')
+
 
     # IF FILE DOESN"T ALREADY EXIST, SUBMIT JOB TO CAS
     if not os.path.isfile(outfits):
