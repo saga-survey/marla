@@ -30,19 +30,22 @@ import pyspherematch as sm
 path = os.environ['SAGADIR']
 
 
+
+def get_google_csv_url(key, gid):
+    return 'https://docs.google.com/spreadsheets/d/{key}/export?format=csv&gid={gid}'.format(**locals())
+
+
+
 # READ CURRENT REMOVE LIST
 url = get_google_csv_url('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo',1379081675)
 removelist = Table.read(url,format='ascii.csv')
 
 # READ NSA AND CLEAN USING COMMENTS.PAR and REMOVE FILE
 nsafile = path + '/cats/nsa_v0_1_2.fits'
-n = fits.getdata(nsafile)
-nsa = table.Table(n)
+nsa = Table.read(nsafile)
 
 
 
-def get_google_csv_url(key, gid):
-    return 'https://docs.google.com/spreadsheets/d/{key}/export?format=csv&gid={gid}'.format(**locals())
 
 
 def run_hostlist(flagged_obs_hosts=False):	
@@ -59,36 +62,20 @@ def run_hostlist(flagged_obs_hosts=False):
   hostdata = Table.read(url, format='ascii.csv')
   nid = hostdata[nsa_col]
 
+
+  # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
   for host in hostdata:
     create_base_catalog(nid, host)
 
-
-	# READ LATEST MACHINE LEARNING RESULTS
-#	MLfile = path + '/cats/MLaug.fits'
-#	m = fits.getdata(MLfile)
-#	ML = table.Table(m)
-
-
-def write_base_fits(nsaid,sqltable):
-  outfits = path + '/hosts/base_sql_nsa' +  str(nsaid) + '.fits'
-
-  if os.path.isfile(outfits):
-    os.remove(outfits)
-
-  sqltable.write(outfits, format='fits')
 
 
 
 
 def create_base_catalog(nsaid,host):
 
-
- sqlfile = path + '/hosts/sql_nsa' + str(nsaid) + '.fits'
-
-
-  # READ SQL FILE	
-  s = fits.getdata(sqlfile)#+'.gz')
-  sqltable = table.Table(s)	
+  # READ SQL FILE 
+  sqlfile = path + '/hosts/sql_nsa' + str(nsaid) + '.fits'
+  sqltable = Table.read(sqlfile)	
 
 	
   # GET BASIC HOST PARAMETERS FROM GOOGLE HOST LIST  
@@ -196,6 +183,16 @@ def create_base_catalog(nsaid,host):
 
   # WRITE FITS FILE
   write_base_fits(nsa,sqltable)
+
+
+
+def write_base_fits(nsaid,sqltable):
+  outfits = path + '/hosts/base_sql_nsa' +  str(nsaid) + '.fits'
+
+  if os.path.isfile(outfits):
+    os.remove(outfits)
+
+  sqltable.write(outfits, format='fits')
 
 
 
