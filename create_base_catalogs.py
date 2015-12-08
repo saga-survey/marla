@@ -35,6 +35,7 @@ def get_google_csv_url(key, gid):
     return 'https://docs.google.com/spreadsheets/d/{key}/export?format=csv&gid={gid}'.format(**locals())
 
 
+###  Yao, can you suggest something cleaner for the lines below?
 
 # READ CURRENT REMOVE LIST
 url = get_google_csv_url('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo',1379081675)
