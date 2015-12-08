@@ -195,7 +195,7 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
     LEFT JOIN PHOTOZ  pz ON p.ObjID = pz.ObjID
     LEFT join WISE_XMATCH as wx on p.objid = wx.sdss_objid
     LEFT join wise_ALLSKY as w on  wx.wise_cntr = w.cntr
-   
+    WHERE n.objID = p.objID 
     """
 
     if isinstance(ra, u.Quantity):
