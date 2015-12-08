@@ -60,11 +60,11 @@ def run_hostlist(flagged_obs_hosts=False):
 
   # READ HOST LIST FROM GOOGLE DOCS
   hostdata = Table.read(url, format='ascii.csv')
-  nid = hostdata[nsa_col]
 
 
   # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
   for host in hostdata:
+    nid = host[nsa_col]
     create_base_catalog(nid, host)
 
 
@@ -74,7 +74,8 @@ def run_hostlist(flagged_obs_hosts=False):
 def create_base_catalog(nsaid,host):
 
   # READ SQL FILE 
-  sqlfile = path + '/hosts/sql_nsa' + str(nsaid) + '.fits'
+  sqlfile = 'sql_nsa' + str(nsaid) + '.fits'
+#    sqlfile = path + '/hosts/sql_nsa' + str(nsaid) + '.fits'
   sqltable = Table.read(sqlfile)	
 
 	
@@ -137,27 +138,28 @@ def create_base_catalog(nsaid,host):
 
 
   # ADD IN BEN'S PREDICTIONS
-  id1,id2,d = sm.spherematch(sqltable['RA'], sqltable['DEC'],ML['RA'], ML['DEC'],1./3600)
-
-  sqltable['PCLASS_1'][id1] = ML['PROBABILITY_CLASS_1'][id2]	
-  sqltable['PCLASS_1_WISE'][id1] = ML['PROBABILITY_CLASS_1_WISE'][id2]	
+#  id1,id2,d = sm.spherematch(sqltable['RA'], sqltable['DEC'],ML['RA'], ML['DEC'],1./3600)
+#  sqltable['PCLASS_1'][id1] = ML['PROBABILITY_CLASS_1'][id2]	
+#  sqltable['PCLASS_1_WISE'][id1] = ML['PROBABILITY_CLASS_1_WISE'][id2]	
 
 
   # REPLACE WISE NUMBERS
-  wbasefile = path + '/hosts/wise/base_sql_nsa' +  str(nsaid) + '_nw1.fits'
-  w = fits.getdata(wbasefile)
-  wbasetable = table.Table(w)	
-  id1,id2,d = sm.spherematch(sqltable['ra'], sqltable['dec'],wbasetable['RA'], wbasetable['DEC'],\
-  							1./3600)
-  print 'Read WISE catalog: ',wbasefile
-  print id1.size,sqltable['ra'].size
-	
-  sqltable['w1'][id1]    = wbasetable['W1'][id2]#
-  sqltable['w1err'][id1] = wbasetable['W1ERR'][id2]
-  sqltable['w2'][id1]    = wbasetable['W2'][id2]
-  sqltable['w2err'][id1] = wbasetable['W2ERR'][id2]
-  sqltable['w1'][np.isnan(sqltable['w1'])]=9999
-  sqltable['w1err'][np.isnan(sqltable['w1err'])]=9999
+  wise=0
+  if wise:
+    wbasefile = path + '/hosts/wise/base_sql_nsa' +  str(nsaid) + '_nw1.fits'
+    w = fits.getdata(wbasefile)
+    wbasetable = table.Table(w)	
+    id1,id2,d = sm.spherematch(sqltable['ra'], sqltable['dec'],wbasetable['RA'], wbasetable['DEC'],\
+    							1./3600)
+    print 'Read WISE catalog: ',wbasefile
+    print id1.size,sqltable['ra'].size
+  	
+    sqltable['w1'][id1]    = wbasetable['W1'][id2]#
+    sqltable['w1err'][id1] = wbasetable['W1ERR'][id2]
+    sqltable['w2'][id1]    = wbasetable['W2'][id2]
+    sqltable['w2err'][id1] = wbasetable['W2ERR'][id2]
+    sqltable['w1'][np.isnan(sqltable['w1'])]=9999
+    sqltable['w1err'][np.isnan(sqltable['w1err'])]=9999
 
 
 
@@ -172,7 +174,7 @@ def create_base_catalog(nsaid,host):
 
 
   # IF THIS IS A SAGA HOST, SET SAGA NAME
-  sqltable['HOST_SAGA_NAME'] = saga.saga_name(nsaid)
+#  sqltable['HOST_SAGA_NAME'] = saga.saga_name(nsaid)
 
   # SET REMOVE FLAGS
 #  sqltable = saga.rm_removelist_obj(removelist, sqltable)	
@@ -182,7 +184,7 @@ def create_base_catalog(nsaid,host):
 #  sqltable = saga.nsa_cleanup(nsa,sqltable)
 
   # WRITE FITS FILE
-  write_base_fits(nsa,sqltable)
+  write_base_fits(nsaid,sqltable)
 
 
 
