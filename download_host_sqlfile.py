@@ -19,13 +19,9 @@ __all__ = ['run_query', 'run_casjob', 'construct_sdss_query']
 import time
 import os
 import re
-from astropy.table import Table
 from astropy import units as u
 from casjobs import CasJobs
-
-
-def get_google_csv_url(key, gid):
-    return 'https://docs.google.com/spreadsheets/d/{key}/export?format=csv&gid={gid}'.format(**locals())
+from GoogleSheets import GoogleSheets
 
 
 def run_query(flagged_obs_hosts=False):
@@ -44,16 +40,12 @@ def run_query(flagged_obs_hosts=False):
 
     # RUN EITHER FULL HOST LIST OR JSUT FLAG ZERO HOSTS, default to flag zero
     if flagged_obs_hosts:
-        url = get_google_csv_url('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
+        hostdata = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
         nsa_col = 'NSA'
     else:
-        url = get_google_csv_url('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+        hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
         nsa_col = 'NSAID'
     
-    # READ HOST LIST FROM GOOGLE DOCS
-    hostdata = Table.read(url, format='ascii.csv')
-
-
     # FOR EACH HOST, DOWNLOAD SQL QUERY
     for host in hostdata:
         if flagged_obs_hosts and not host['Host Flag']:

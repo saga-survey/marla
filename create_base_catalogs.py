@@ -25,7 +25,7 @@ from astropy.table import Table
 import os
 
 import pyspherematch as sm
-
+from GoogleSheets import GoogleSheets
 
 path = os.environ['SAGADIR']
 
@@ -38,8 +38,7 @@ def get_google_csv_url(key, gid):
 ###  Yao, can you suggest something cleaner for the lines below?
 
 # READ CURRENT REMOVE LIST
-url = get_google_csv_url('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo',1379081675)
-removelist = Table.read(url,format='ascii.csv')
+removelist = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
 
 # READ NSA AND CLEAN USING COMMENTS.PAR and REMOVE FILE
 nsafile = path + '/cats/nsa_v0_1_2.fits'
