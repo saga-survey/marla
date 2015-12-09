@@ -23,7 +23,7 @@ from FileLoader import GoogleSheets, FitsTable
 
 SAGA_DIR = os.getenv('SAGADIR', os.curdir)
 remove_list = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
-nsa_catalog = FitsTable(os.path.join(SAGA_DIR, '/cats/nsa_v0_1_2.fits'))
+nsa_catalog = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
 
 def run_hostlist():
@@ -42,7 +42,7 @@ def _filled_column(name, fill_value, size):
     return Column([fill_value]*int(size), name)
 
 
-def create_base_catalog(nsaid,host):
+def create_base_catalog(nsaid, host):
     # READ SQL FILE
     sqlfile = 'sql_nsa{0}.fits'.format(nsaid)
     #sqlfile = os.path.join(SAGA_DIR, 'hosts', sqlfile)
@@ -64,7 +64,7 @@ def create_base_catalog(nsaid,host):
     cdec  = np.cos(np.deg2rad(hostdec))
     dra   = sqltable['RA'] - hostra
     ddec  = sqltable['DEC'] - hostdec
-    rhost_arcm = 60*((dra * cdec) ** 2 + ddec ** 2) ** 0.5
+    rhost_arcm = 60.*((dra * cdec) ** 2 + ddec ** 2) ** 0.5
     rhost_kpc = 1000.*hostdist*np.sin(np.deg2rad(rhost_arcm/60.))
 
     # ADD EXTRA COLUMNS -
@@ -88,7 +88,9 @@ def create_base_catalog(nsaid,host):
             _filled_column('MASKNAME', ' '*48, size),
             _filled_column('ZQUALITY', -1, size),
             _filled_column('SPEC_REPEAT', ' '*48, size)]
+
     sqltable.add_columns(cols)
+    del cols
 
     # ADD IN BEN'S PREDICTIONS
     #id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], ML['RA'], ML['DEC'], 1./3600)
@@ -113,9 +115,7 @@ def create_base_catalog(nsaid,host):
         sqltable['w1err'][np.isnan(sqltable['w1err'])] = 9999
 
     # INITALIZE SDSS SPECTRAL ENTRIE
-    s0  = sqltable['SPEC_Z'] != -1
-    s1  = sqltable['SPEC_Z_WARN'] ==  0
-    msk = s0 & s1
+    msk = (sqltable['SPEC_Z'] != -1) & (sqltable['SPEC_Z_WARN'] == 0)
     sqltable['TELNAME'][msk] = 'SDSS'
     sqltable['MASKNAME'][msk] = 'SDSS'
     sqltable['SPEC_REPEAT'][msk] = 'SDSS'
@@ -133,7 +133,7 @@ def create_base_catalog(nsaid,host):
     return sqltable
 
 
-def write_base_fits(nsaid,sqltable):
+def write_base_fits(nsaid, sqltable):
     outfits = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits'.format(nsaid))
     if os.path.isfile(outfits):
         os.remove(outfits)
@@ -142,10 +142,3 @@ def write_base_fits(nsaid,sqltable):
 
 if __name__ == '__main__':
     run_hostlist()
-
-
-
-
-
-
-
