@@ -18,15 +18,23 @@ __all__ = ['run_hostlist','create_base_catalog']
 import os
 import numpy as np
 from astropy.table import Table, Column
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+
 import pyspherematch as sm
 from FileLoader import GoogleSheets, FitsTable
+
 
 SAGA_DIR = os.getenv('SAGADIR', os.curdir)
 remove_list = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
 nsa_catalog = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
 
+##################################  
 def run_hostlist():
+    """
+    Create base catalog for each host in hostlist
+    """
     # READ HOST LIST FROM GOOGLE DOCS
     hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634).load()
     nsa_col = 'NSAID'
@@ -38,34 +46,50 @@ def run_hostlist():
         write_base_fits(nid, catalog)
 
 
+
+##################################
 def _filled_column(name, fill_value, size):
+    """
+    Tool to allow for large strings
+    """
     return Column([fill_value]*int(size), name)
 
 
+##################################
 def create_base_catalog(nsaid, host):
+    """
+    Create single base catalog from SQL request
+    with value-added quantities    
+    """
+
     # READ SQL FILE
     sqlfile = 'sql_nsa{0}.fits'.format(nsaid)
     #sqlfile = os.path.join(SAGA_DIR, 'hosts', sqlfile)
     sqltable = Table.read(sqlfile)
 
     # GET BASIC HOST PARAMETERS FROM GOOGLE HOST LIST
-    hostra   = host['RA']  #RA
-    hostdec  = host['Dec']  #DEC
+    hostra   = host['RA']        #RA
+    hostdec  = host['Dec']       #DEC
     hostdist = host['distance']  #DISTANCE
-    hostv    = host['vhelio']  #VHELIO
-    hostMK   = host['K'] #M_K
-    hostflag = host['flag'] #HOST FLAG
+    hostv    = host['vhelio']    #VHELIO
+    hostMK   = host['K']         #M_K
+    hostflag = host['flag']      #HOST FLAG
 
     # SET VIRIAL RADIUS = 300 kpc, EXCLUDE 20 kpc AROUND HOST
     #rkpc = 300.
     #rvir = np.rad2deg(np.arcsin(0.3/hostdist))
     #rgal = np.rad2deg(np.arcsin(0.02/hostdist))
 
-    cdec  = np.cos(np.deg2rad(hostdec))
-    dra   = sqltable['RA'] - hostra
-    ddec  = sqltable['DEC'] - hostdec
-    rhost_arcm = 60.*((dra * cdec) ** 2 + ddec ** 2) ** 0.5
-    rhost_kpc = 1000.*hostdist*np.sin(np.deg2rad(rhost_arcm/60.))
+
+    # CALCULATE OBJECT DISTANCE FROM HOST
+    catsc = SkyCoord(u.Quantity(sqltable['RA'], u.deg), u.Quantity(sqltable['DEC'], u.deg))
+    hostcoords = SkyCoord(hostra*u.deg, hostdec*u.deg)
+    seps = catsc.separation(hostcoords)
+
+    rhost_arcm = seps.to(u.arcmin).value
+    rhost_kpc  = 1000.*hostdist*np.sin(np.deg2rad(rhost_arcm/60.))
+
+
 
     # ADD EXTRA COLUMNS -
     size = len(sqltable)
@@ -107,12 +131,12 @@ def create_base_catalog(nsaid, host):
         print id1.size, sqltable['ra'].size
 
         #TODO: probably need to add columns to sqltable
-        sqltable['w1'][id1]    = wbasetable['W1'][id2]
-        sqltable['w1err'][id1] = wbasetable['W1ERR'][id2]
-        sqltable['w2'][id1]    = wbasetable['W2'][id2]
-        sqltable['w2err'][id1] = wbasetable['W2ERR'][id2]
-        sqltable['w1'][np.isnan(sqltable['w1'])] = 9999
-        sqltable['w1err'][np.isnan(sqltable['w1err'])] = 9999
+        sqltable['W1'][id1]    = wbasetable['W1'][id2]
+        sqltable['W1ERR'][id1] = wbasetable['W1ERR'][id2]
+        sqltable['W2'][id1]    = wbasetable['W2'][id2]
+        sqltable['W2ERR'][id1] = wbasetable['W2ERR'][id2]
+        sqltable['W1'][np.isnan(sqltable['w1'])] = 9999
+        sqltable['W1err'][np.isnan(sqltable['w1err'])] = 9999
 
     # INITALIZE SDSS SPECTRAL ENTRIE
     msk = (sqltable['SPEC_Z'] != -1) & (sqltable['SPEC_Z_WARN'] == 0)
@@ -133,6 +157,7 @@ def create_base_catalog(nsaid, host):
     return sqltable
 
 
+##################################
 def write_base_fits(nsaid, sqltable):
     outfits = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits'.format(nsaid))
     if os.path.isfile(outfits):
