@@ -24,43 +24,20 @@ from astropy import table
 from astropy.table import Table
 import os
 
+from FileLoader import GoogleSheets, FitsTable
 import pyspherematch as sm
-from GoogleSheets import GoogleSheets
 
-path = os.environ['SAGADIR']
-
-
-
-def get_google_csv_url(key, gid):
-    return 'https://docs.google.com/spreadsheets/d/{key}/export?format=csv&gid={gid}'.format(**locals())
+SAGA_DIR = os.getenv('SAGADIR', os.curdir)
+remove_list = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
+nsa_catalog = FitsTable(os.path.join(SAGA_DIR, '/cats/nsa_v0_1_2.fits'))
 
 
-###  Yao, can you suggest something cleaner for the lines below?
-
-# READ CURRENT REMOVE LIST
-removelist = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
-
-# READ NSA AND CLEAN USING COMMENTS.PAR and REMOVE FILE
-nsafile = path + '/cats/nsa_v0_1_2.fits'
-nsa = Table.read(nsafile)
-
-
-
-
-
-def run_hostlist(flagged_obs_hosts=False):	
-
-  if flagged_obs_hosts:
-    url = get_google_csv_url('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
-    nsa_col = 'NSA'
-  else:
-    url = get_google_csv_url('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
-    nsa_col = 'NSAID'
-
+def run_hostlist():	
 
   # READ HOST LIST FROM GOOGLE DOCS
-  hostdata = Table.read(url, format='ascii.csv')
-
+  hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634).load()
+  nsa_col = 'NSAID'
+ 
 
   # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
   for host in hostdata:

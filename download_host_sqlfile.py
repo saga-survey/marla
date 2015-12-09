@@ -21,7 +21,7 @@ import os
 import re
 from astropy import units as u
 from casjobs import CasJobs
-from GoogleSheets import GoogleSheets
+from FileLoader import GoogleSheets
 
 
 def run_query(flagged_obs_hosts=False):
@@ -40,13 +40,15 @@ def run_query(flagged_obs_hosts=False):
 
     # RUN EITHER FULL HOST LIST OR JSUT FLAG ZERO HOSTS, default to flag zero
     if flagged_obs_hosts:
-        hostdata = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
+        sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
         nsa_col = 'NSA'
     else:
-        hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+        sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
         nsa_col = 'NSAID'
+
+    hostdata = sheet.load()
     
-    # FOR EACH HOST, DOWNLOAD SQL QUERY
+    # FOR EACH HOST, DOWNLOAD SQL QUERY      
     for host in hostdata:
         if flagged_obs_hosts and not host['Host Flag']:
             continue
