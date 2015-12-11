@@ -20,20 +20,28 @@ import numpy as np
 from astropy.table import Table, Column
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+import saga_tools
+
 
 import pyspherematch as sm
 from FileLoader import GoogleSheets, FitsTable
 
 
+# SET-UP DIRECTORIES AND FILES TO BE LOADED
 SAGA_DIR = os.getenv('SAGADIR', os.curdir)
 remove_list = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
 nsa_catalog = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
 
+
 ##################################  
-def run_hostlist():
+def run_hostlist(nowise=False):
     """
     Create base catalog for each host in hostlist
+
+    Parameters
+    ----------
+    nowise : bool, optional
     """
     # READ HOST LIST FROM GOOGLE DOCS
     hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634).load()
@@ -42,7 +50,7 @@ def run_hostlist():
     # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
     for host in hostdata:
         nid = host[nsa_col]
-        catalog = create_base_catalog(nid, host)
+        catalog = create_base_catalog(nid, host,nowise)
         write_base_fits(nid, catalog)
 
 
@@ -56,15 +64,14 @@ def _filled_column(name, fill_value, size):
 
 
 ##################################
-def create_base_catalog(nsaid, host):
+def create_base_catalog(nsaid, host,nowise):
     """
     Create single base catalog from SQL request
     with value-added quantities    
     """
 
     # READ SQL FILE
-    sqlfile = 'sql_nsa{0}.fits'.format(nsaid)
-    #sqlfile = os.path.join(SAGA_DIR, 'hosts', sqlfile)
+    sqlfile = os.path.join(SAGA_DIR, 'hosts', 'sql_nsa{0}.fits'.format(nsaid))
     sqltable = Table.read(sqlfile)
 
     # GET BASIC HOST PARAMETERS FROM GOOGLE HOST LIST
@@ -75,10 +82,6 @@ def create_base_catalog(nsaid, host):
     hostMK   = host['K']         #M_K
     hostflag = host['flag']      #HOST FLAG
 
-    # SET VIRIAL RADIUS = 300 kpc, EXCLUDE 20 kpc AROUND HOST
-    #rkpc = 300.
-    #rvir = np.rad2deg(np.arcsin(0.3/hostdist))
-    #rgal = np.rad2deg(np.arcsin(0.02/hostdist))
 
 
     # CALCULATE OBJECT DISTANCE FROM HOST
@@ -121,14 +124,13 @@ def create_base_catalog(nsaid, host):
     #sqltable['PCLASS_1'][id1] = ML['PROBABILITY_CLASS_1'][id2]
     #sqltable['PCLASS_1_WISE'][id1] = ML['PROBABILITY_CLASS_1_WISE'][id2]
 
-    # REPLACE WISE NUMBERS
-    wise = 0
-    if wise:
+
+    # ADD WISE NUMBERS
+    if not nowise:
         wbasefile = os.path.join(SAGA_DIR, 'hosts', 'wise', 'base_sql_nsa{0}_nw1.fits',format(nsaid))
         wbasetable = FitsTable(wbasefile).load()
         id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], wbasetable['RA'], wbasetable['DEC'], 1./3600)
         print 'Read WISE catalog: ', wbasefile
-        print id1.size, sqltable['ra'].size
 
         #TODO: probably need to add columns to sqltable
         sqltable['W1'][id1]    = wbasetable['W1'][id2]
@@ -137,6 +139,7 @@ def create_base_catalog(nsaid, host):
         sqltable['W2ERR'][id1] = wbasetable['W2ERR'][id2]
         sqltable['W1'][np.isnan(sqltable['w1'])] = 9999
         sqltable['W1err'][np.isnan(sqltable['w1err'])] = 9999
+
 
     # INITALIZE SDSS SPECTRAL ENTRIE
     msk = (sqltable['SPEC_Z'] != -1) & (sqltable['SPEC_Z_WARN'] == 0)
@@ -149,7 +152,7 @@ def create_base_catalog(nsaid, host):
     #sqltable['HOST_SAGA_NAME'] = saga.saga_name(nsaid)
 
     # SET REMOVE FLAGS
-    #sqltable = saga.rm_removelist_obj(remove_list, sqltable)
+    sqltable = saga_tools.rm_removelist_obj(remove_list, sqltable)
 
     # CLEAN USING NSAID
     #sqltable = saga.nsa_cleanup(nsa_catalog, sqltable)
