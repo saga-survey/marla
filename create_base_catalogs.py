@@ -152,7 +152,8 @@ def create_base_catalog(nsaid, host,nowise):
     #sqltable['HOST_SAGA_NAME'] = saga.saga_name(nsaid)
 
     # SET REMOVE FLAGS
-    sqltable = saga_tools.rm_removelist_obj(remove_list, sqltable)
+    r=remove_list.load()
+    sqltable = saga_tools.rm_removelist_obj(r, sqltable)
 
     # CLEAN USING NSAID
     #sqltable = saga.nsa_cleanup(nsa_catalog, sqltable)
