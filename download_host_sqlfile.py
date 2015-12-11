@@ -85,7 +85,7 @@ def run_casjob(query, outname):
     
     # USES POST 
     cjob = CasJobs(base_url='http://skyserver.sdss.org/casjobs/services/jobs.asmx', request_type='POST')
-    outfits = os.path.join(SAGA_DIR, outname + '.fits')
+    outfits = os.path.join(SAGA_DIR, 'hosts/',outname + '.fits')
 
 
     # IF FILE DOESN"T ALREADY EXIST, SUBMIT JOB TO CAS
@@ -172,8 +172,8 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
     p.FIBER2MAG_R, p.FIBER2MAGERR_R,
     p.EXPMAG_R, p.EXPMAGERR_R,
 
-    p.PETROR50_R, p.PETROR90_R, p.PETROMag_R,
-    p.EXPRAD_R, p.expMag_r + 2.5*log10(2*PI()*p.expRad_r*p.expRad_r + 1e-20) as SB_EXP_R,
+    p.PETROR50_R, p.PETROR90_R, p.PETROMAG_R,
+    p.expMag_r + 2.5*log10(2*PI()*p.expRad_r*p.expRad_r + 1e-20) as SB_EXP_R,
     p.petroMag_r + 2.5*log10(2*PI()*p.petroR50_r*p.petroR50_r) as SB_PETRO_R,
 
     ISNULL(w.j_m_2mass,9999) as J, ISNULL(w.j_msig_2mass,9999) as JERR, 
