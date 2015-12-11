@@ -32,7 +32,6 @@ def rm_removelist_obj(removelist,sagatable):
 
 	
    # MATCH GAMA+SAGA IN SDSSS TO GET PHOTOMETRIC PROPERTIES
-   	removelist.load()
 	id1,id2,d = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
 		                      removelist.field('Targ_RA'), removelist.field('Targ_Dec'),\
 		                      1./3600,nnearest=1)
