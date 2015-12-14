@@ -12,15 +12,6 @@ import pyspherematch as sm
 
 
 
-path = os.environ['SAGADIR']
-
-
-# GOOGLE DOCUMENTS URLs
-SAGA_URLS = {'Host_noflags':'https://docs.google.com/a/yale.edu/spreadsheets/d/1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8/export?format=csv&gid=448084634',
-				 'Obs_Hosts': 'https://docs.google.com/spreadsheet/pub?key=0AggNS3_oqq91dHdVZ1J3cVZrRWVjcmkyeUF1WjVNQ1E&output=csv',
-		         'Remove':'http://docs.google.com/spreadsheets/d/1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo/export?format=csv&gid=1379081675'}
-
-
 
 #####################################################################
 #  USE GOOGLE DOC REMOVE LIST TO SET REMOVE FLAG
@@ -31,10 +22,10 @@ SAGA_URLS = {'Host_noflags':'https://docs.google.com/a/yale.edu/spreadsheets/d/1
 def rm_removelist_obj(removelist,sagatable):
 
 	
-   # MATCH GAMA+SAGA IN SDSSS TO GET PHOTOMETRIC PROPERTIES
+   # MATCH sql OBJECTS TO THOSE IN GOOGLE DOC REMOVE LIST
 	id1,id2,d = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
-		                      removelist.field('Targ_RA'), removelist.field('Targ_Dec'),\
-		                      1./3600,nnearest=1)
+		           removelist.field('Targ_RA'), removelist.field('Targ_Dec'),\
+		           1./3600,nnearest=1)
 
 	nmatch = np.size((d > 0.0).nonzero())
 	print "remove list objects = ",nmatch
@@ -58,7 +49,7 @@ def rm_removelist_obj(removelist,sagatable):
 def nsa_cleanup(nsa,sagatable):
 
    # MATCH NSA to SAGA, BEGIN WITH SMALLER RADIUS
-	id1,id2,d = sm.spherematch(sagatable['ra'], sagatable['dec'],\
+	id1,id2,d = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
 							   nsa['RA'], nsa['DEC'],\
 							   2./3600,nnearest = 1)
 	nmatch = np.size((d > 0.0).nonzero())
@@ -73,7 +64,7 @@ def nsa_cleanup(nsa,sagatable):
 
 	# FIRST PASS USING SPHEREMATCH
 		reff_nsa = 3*nsa['PETROTH90'][nid]		
-		m1,m2,dd = sm.spherematch(sagatable['ra'], sagatable['dec'],\
+		m1,m2,dd = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
 			[nra],[ndec],reff_nsa/3600)
 
 
@@ -85,8 +76,8 @@ def nsa_cleanup(nsa,sagatable):
 		sth = np.sin(th)
 		cth = np.cos(th)
 
-		x = 3600*(sagatable['ra'][m1] - nra)
-		y = 3600*(sagatable['dec'][m1] - ndec)
+		x = 3600*(sagatable['RA'][m1] - nra)
+		y = 3600*(sagatable['DEC'][m1] - ndec)
 		tmp1 = (x*cth) - (y*sth)  
 		tmp2 = (x*sth) + (y*cth)
 		
@@ -100,11 +91,11 @@ def nsa_cleanup(nsa,sagatable):
 		sagatable['REMOVE'][sid]   = -1   
 		sagatable['ZQUALITY'][sid] = 4
 		sagatable['TELNAME'][sid]  = 'NSA'
-		sagatable['phot_sg'][sid]  = 3
-		sagatable['ra'][sid]       = nra
-		sagatable['dec'][sid]      = ndec
-		sagatable['spec_z'][sid]   = nsa['Z'][nid]
-		sagatable['spec_z_warn'][sid] = 0
+#		sagatable['phot_sg'][sid]  = 3
+		sagatable['RA'][sid]       = nra
+		sagatable['DEC'][sid]      = ndec
+		sagatable['SPEC_Z'][sid]   = nsa['Z'][nid]
+		sagatable['SPEC_Z_WARN'][sid] = 0
 		sagatable['MASKNAME'][sid] = nsa['ZSRC'][nid]
 		sagatable['OBJ_NSAID'][sid]= nsa['NSAID'][nid]
 
@@ -119,11 +110,11 @@ def nsa_cleanup(nsa,sagatable):
 		sagatable['z'][sid]= mag[6] + An[6]  
 
 
-		sagatable['expRad_r'][sid] = -99#nsa['PETROTH90']
-		sagatable['sb_exp_r'][sid] = -99#nsa['PETROTH90']
-		sagatable['petroR90_r'][sid] = nsa['PETROTH90'][nid]
-		sagatable['petroR50_r'][sid] = nsa['PETROTH50'][nid]
-		sagatable['petroMag_r'][sid] = -99#nsa['PETROTH90']
+#		sagatable['expRad_r'][sid] = -99#nsa['PETROTH90']
+#		sagatable['sb_exp_r'][sid] = -99#nsa['PETROTH90']
+#		sagatable['petroR90_r'][sid] = nsa['PETROTH90'][nid]
+#		sagatable['petroR50_r'][sid] = nsa['PETROTH50'][nid]
+#		sagatable['petroMag_r'][sid] = -99#nsa['PETROTH90']
 
 
 	return sagatable
@@ -193,8 +184,6 @@ def fill_sats_array(sqltable):
 #
 def repeat_sat_cleanup(sagatable):
 
-#	s = fits.getdata('test.fits')
-#	sagatable = table.Table(s)	
 
 
 	isat = np.where(sagatable['SATS'] == 1)[0]
@@ -213,26 +202,21 @@ def repeat_sat_cleanup(sagatable):
 #			sagatable['REMOVE'][i]  = -1
 
 
-#	sagatable.write('stest.fits',format='fits')
 	return sagatable
 
+##################################
+def saga_name(names,nsaid):
+	"""Read Google doc Observed Host List and
+	parse SAGA name from file"""
 
-def saga_name(nsaid):
-
-    # READ SAGA OBSERVED HOST LIST (USE THIS TO ADD SAGA COMMON NAME ONLY)
-	csvurl = SAGA_URLS.get('Obs_Hosts', None)
-	res = requests.get(csvurl)
-	csv = res.content.split('\n')[1:]
-	res.close() 
-	sagahosts = ascii.read(csv)
-	saga_names  = sagahosts['col1']
-	saga_nsaids = sagahosts['col3']
+	saga_names  = names['SAGA Name']
+	saga_nsaids = names['NSA']
 
 	sname = ''
 	if nsaid in saga_nsaids: 
 		msk = saga_nsaids == nsaid
 		sname = saga_names[msk]
-		print sname
+
 	return sname	
 
 
