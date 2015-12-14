@@ -29,20 +29,23 @@ from FileLoader import GoogleSheets, FitsTable
 
 # SET-UP DIRECTORIES AND FILES TO BE LOADED
 SAGA_DIR = os.getenv('SAGADIR', os.curdir)
-remove_list = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
-nsa_catalog = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
+REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
+SAGANAMES  = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0, header_start=0)
+NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
 
 ##################################  
 def run_hostlist(nowise=False):
     """
-    Create base catalog for each host in hostlist
+    Create base catalog for each host in hostlist, 
+    default is to read offline Lang WISE catalogs
 
     Parameters
     ----------
-    nowise : bool, optional
+    nowise : bool, optional.  Turn off WISE catalog read
     """
+
     # READ HOST LIST FROM GOOGLE DOCS
     hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634).load()
     nsa_col = 'NSAID'
@@ -137,8 +140,11 @@ def create_base_catalog(nsaid, host,nowise):
         sqltable['W1ERR'][id1] = wbasetable['W1ERR'][id2]
         sqltable['W2'][id1]    = wbasetable['W2'][id2]
         sqltable['W2ERR'][id1] = wbasetable['W2ERR'][id2]
-        sqltable['W1'][np.isnan(sqltable['w1'])] = 9999
-        sqltable['W1err'][np.isnan(sqltable['w1err'])] = 9999
+        sqltable['W1'][np.isnan(sqltable['W1'])] = 9999
+        sqltable['W1err'][np.isnan(sqltable['W1ERR'])] = 9999
+        sqltable['W2'][np.isnan(sqltable['W2'])] = 9999
+        sqltable['W2err'][np.isnan(sqltable['W2ERR'])] = 9999
+
 
 
     # INITALIZE SDSS SPECTRAL ENTRIE
@@ -149,14 +155,17 @@ def create_base_catalog(nsaid, host,nowise):
     sqltable['ZQUALITY'][msk] = 4
 
     # IF THIS IS A SAGA HOST, SET SAGA NAME
-    #sqltable['HOST_SAGA_NAME'] = saga.saga_name(nsaid)
+    names = SAGANAMES.load()
+    sqltable['HOST_SAGA_NAME'] = saga_tools.saga_name(names,nsaid)
+    print sqltable['HOST_SAGA_NAME'][0]
 
     # SET REMOVE FLAGS
-    r=remove_list.load()
-    sqltable = saga_tools.rm_removelist_obj(r, sqltable)
+    rmv = REMOVELIST.load()
+    sqltable = saga_tools.rm_removelist_obj(rmv, sqltable)
 
     # CLEAN USING NSAID
-    #sqltable = saga.nsa_cleanup(nsa_catalog, sqltable)
+    nsa = NSACAT.load()
+    sqltable = saga_tools.nsa_cleanup(nsa, sqltable)
 
     return sqltable
 
