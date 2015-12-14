@@ -24,6 +24,7 @@ from casjobs import CasJobs
 from FileLoader import GoogleSheets
 
 
+##################################  
 def run_query(flagged_obs_hosts=False):
     """
     Send casjob queries for each host
@@ -63,7 +64,7 @@ def run_query(flagged_obs_hosts=False):
         run_casjob(qry, 'sql_nsa{}'.format(nid))
 
 
-
+##################################  
 def run_casjob(query, outname):
     """
     Run single casjob
@@ -97,11 +98,13 @@ def run_casjob(query, outname):
             code, status = cjob.status(job_id)
             print code, status
 
+       # DOWNLOAD FILE AND REMOVE FROM CASJOBS DATABASE
         print 'downloading', outfits
         cjob.request_and_get_output(outname, 'FITS', outfits)
         cjob.drop_table(outname)
 
 
+##################################  
 def construct_sdss_query(outname, ra, dec, radius=1.0):
     """
     Generates the query to send to the SDSS to get the full SDSS catalog around
