@@ -135,24 +135,24 @@ def fill_sats_array(sqltable):
 	c = 2.997e5	
 
 	# Velocity difference between object and SAGA host
-	vdiff = np.abs((c * sqltable['spec_z']) -  sqltable['HOST_VHOST']) 
+	vdiff = np.abs((c * sqltable['SPEC_Z']) -  sqltable['HOST_VHOST']) 
 
 
 	# GALAXY ONLY, OBJECTS WITH SPECTRA ONLY
-	galcut = (sqltable['spec_z'] != -1) & \
-	  	     (sqltable['phot_sg'] == 3) 
+	galcut = (sqltable['SPEC_Z'] != -1) & \
+	  	     (sqltable['PHOTPTYPE'] == 3) 
 
 
 	# SATS = 0, ALL HIGH-Z (z > 0.05) GALAXIES
 	highz  = galcut & \
-		    (sqltable['spec_z'] >= 0.05)
+		    (sqltable['SPEC_Z'] >= 0.05)
 	sqltable['SATS'][highz] = 0
 
 
 	# SATS = 2, ALL LOW-Z (z < 0.05) GALAXIES
 	ncut = sqltable['MASKNAME'] != 'ned'  # NED LOWZ VELOCITIES HAVE PROBLEMS
 	lowz  = galcut & ncut &\
-		    (sqltable['spec_z'] < 0.05)
+		    (sqltable['SPEC_Z'] < 0.05)
 	sqltable['SATS'][lowz] = 2
 
 
@@ -192,10 +192,10 @@ def repeat_sat_cleanup(sagatable):
 	for i in isat:
 		if sagatable['REMOVE'][i] == -1:
 
-			rsat    = sagatable['ra'][i]
-			dsat    = sagatable['dec'][i]
+			rsat    = sagatable['RA'][i]
+			dsat    = sagatable['DEC'][i]
 
-			m1,m2,d = sm.spherematch(sagatable['ra'], sagatable['dec'],\
+			m1,m2,d = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
 			                     [rsat],[dsat], 10./3600)
 			
 #			sagatable['REMOVE'][m1] = 3
