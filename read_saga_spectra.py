@@ -14,10 +14,11 @@ import numpy as np
 from astropy.io import ascii
 from astropy.io import fits
 from astropy import table
+from astropy.table import Table
 import pyfits
+
 import os
 import glob
-import requests
 import pyspherematch as sm
 
 
@@ -32,13 +33,14 @@ SAGA_DIR = os.environ['SAGA_DIR']
 def read_gama():
 
   # READ GAMA FILE, DOWNLOADED FROM ??
-	gfile = path + '/cats/GAMA_SpecObj.fits'
+	gfile = SAGA_DIR + '/cats/GAMA_SpecObj.fits'
 	g    = pyfits.open(gfile)    # BUG: NEED TO READ WITH PYFITS, NOT ASTROPY
-   	gm   = g[1].data
+	gm   = g[1].data
+
 
 
   # ACCEPT GAMA SPECTRA WITH GOOD QUALITY AND NOT IN SDSS
-  	msk = (gm['nq'] >= 3) & (gm['survey'] != 'SDSS') 
+  	msk = (gm['NQ'] >= 3) & (gm['SURVEY'] != 'SDSS') 
 	gama=gm[msk]
 
 
@@ -64,7 +66,7 @@ def read_gama():
 # READ MMT ZLOG CATALOGS
 def read_mmt():
 
-	mmt_path  = path + '/Spectra/Final/MMT/'
+	mmt_path  = SAGA_DROPBOX + '/Spectra/Final/MMT/'
 	mmt_files = glob.glob(mmt_path+'*zlog')
 
 	n=0
@@ -87,7 +89,7 @@ def read_mmt():
 		telname = ['MMT' for i in one]
 		spec_repeat = ['MMT' for i in one]
 		maskid = [mfile for i in one]
-		maskid = [x.split(path,1)[1] for x in maskid]
+		maskid = [x.split(SAGA_DROPBOX,1)[1] for x in maskid]
 
 
 	   # CREATE MMT SPEC TABLE
@@ -109,7 +111,7 @@ def read_mmt():
 # READ AAT ZLOG CATALOGS
 def read_aat():
 
-	aat_path  = path + '/Spectra/Final/AAT/'
+	aat_path  = SAGA_DROPBOX + '/Spectra/Final/AAT/'
 	aat_files = glob.glob(aat_path+'*zlog')
 
 	n=0
@@ -125,7 +127,7 @@ def read_aat():
 		telname = ['AAT' for i in one]
 		spec_repeat = ['AAT' for i in one]
 		maskid = [afile for i in one]
-		maskid = [x.split(path,1)[1] for x in maskid]
+		maskid = [x.split(SAGA_DROPBOX,1)[1] for x in maskid]
 
 
 	   # CREATE MMT SPEC TABLE
@@ -149,7 +151,7 @@ def read_aat():
 
 def read_imacs():
 
-	imacs_path  = path + '/Spectra/Final/IMACS/'
+	imacs_path  = SAGA_DROPBOX + '/Spectra/Final/IMACS/'
 	imacs_files = glob.glob(imacs_path+'*zlog')
 
 	n=0
@@ -166,7 +168,7 @@ def read_imacs():
 		telname = ['IMACS' for i in one]
 		spec_repeat = ['IMACS' for i in one]
 		maskid = [ifile for i in one]
-		maskid = [x.split(path,1)[1] for x in maskid]
+		maskid = [x.split(SAGA_DROPBOX,1)[1] for x in maskid]
 
 
 	   # CREATE MMT SPEC TABLE
@@ -193,8 +195,8 @@ def read_wiyn():
 	from astropy import units as u
 	from astropy.coordinates import SkyCoord
 
-	wiyn_path  = path + '/Spectra/Final/WIYN/'
-	wiyn_files = glob.glob(wiyn_path+'*fits')
+	wiyn_path  = SAGA_DROPBOX + '/Spectra/Final/WIYN/'
+	wiyn_files = glob.glob(wiyn_path+'*fits.gz')
 
 	n=0
 	for wfile in wiyn_files:	
@@ -212,7 +214,7 @@ def read_wiyn():
 
       # KEEP GERENIC PATH TO DATA FILES (remove specific path)
 		maskid = [wfile for i in one]
-		maskid = [x.split(path,1)[1] for x in maskid]
+		maskid = [x.split(SAGA_DROPBOX,1)[1] for x in maskid]
 
 	  # CONVERT WIYN STRING COORDINATES TO DEGREES	
 		c=SkyCoord(wiyn['RA'],wiyn['DEC'],frame='icrs',unit=(u.hourangle, u.deg))
