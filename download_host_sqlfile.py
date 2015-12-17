@@ -82,7 +82,7 @@ def run_casjob(query, outname):
     if not all(k in os.environ for k in ('CASJOBS_WSID', 'CASJOBS_PW')):
         raise ValueError('You are not setup to run casjobs')
     
-    SAGA_DIR = os.getenv('SAGADIR', os.curdir)
+    SAGA_DIR = os.getenv('SAGA_DIR', os.curdir)
     
     # USES POST 
     cjob = CasJobs(base_url='http://skyserver.sdss.org/casjobs/services/jobs.asmx', request_type='POST')
