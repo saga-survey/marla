@@ -27,7 +27,7 @@ from FileLoader import GoogleSheets, FitsTable
 
 
 # SET-UP DIRECTORIES AND FILES TO BE LOADED
-SAGA_DIR = os.getenv('SAGADIR', os.curdir)
+SAGA_DIR = os.getenv('SAGA_DIR', os.curdir)
 
 REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
 SAGANAMES  = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0, header_start=0)
