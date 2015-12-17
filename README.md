@@ -36,5 +36,7 @@ maintained to run the base catalogs:
 
 --  Create value-added SAGA base catalogs.
 	> import create_base_catalogs
-	> create_base_catalogs.run_query()
-    
+	> create_base_catalogs.run_query(nowise=1)
+
+	If you want to include Lang WISE data, need to download _nw files
+    into SAGA/nw_hosts/
