@@ -22,7 +22,6 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 import saga_tools
 
-
 import pyspherematch as sm
 from FileLoader import GoogleSheets, FitsTable
 
@@ -35,10 +34,11 @@ SAGANAMES  = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0, hea
 NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
 
+
 ##################################  
 def run_hostlist(nowise=False):
     """
-    Create base catalog for each host in hostlist, 
+    For each host in hostlist, create base catalog
     default is to read offline Lang WISE catalogs
 
     Parameters
@@ -48,7 +48,7 @@ def run_hostlist(nowise=False):
 
     # READ HOST LIST FROM GOOGLE DOCS
     hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634).load()
-    nsa_col = 'NSAID'
+    nsa_col  = 'NSAID'
 
     # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
     for host in hostdata:
@@ -57,13 +57,6 @@ def run_hostlist(nowise=False):
         write_base_fits(nid, catalog)
 
 
-
-##################################
-def _filled_column(name, fill_value, size):
-    """
-    Tool to allow for large strings
-    """
-    return Column([fill_value]*int(size), name)
 
 
 ##################################
@@ -74,7 +67,7 @@ def create_base_catalog(nsaid, host,nowise):
     """
 
     # READ SQL FILE
-    sqlfile = os.path.join(SAGA_DIR, 'hosts', 'sql_nsa{0}.fits'.format(nsaid))
+    sqlfile  = os.path.join(SAGA_DIR, 'hosts', 'sql_nsa{0}.fits'.format(nsaid))
     sqltable = Table.read(sqlfile)
 
     # GET BASIC HOST PARAMETERS FROM GOOGLE HOST LIST
@@ -99,7 +92,11 @@ def create_base_catalog(nsaid, host,nowise):
 
     # ADD EXTRA COLUMNS -
     size = len(sqltable)
-    cols = [_filled_column('HOST_RA', hostra, size), #HOST
+    cols = [_filled_column('W1',-1.,size),
+            _filled_column('W1ERR',-1.,size),
+            _filled_column('W2',-1.,size),
+            _filled_column('W2ERR',-1.,size),
+            _filled_column('HOST_RA', hostra, size), #HOST
             _filled_column('HOST_DEC', hostdec, size),
             _filled_column('HOST_DIST', hostdist, size),
             _filled_column('HOST_VHOST', hostv, size),
@@ -130,20 +127,16 @@ def create_base_catalog(nsaid, host,nowise):
 
     # ADD WISE NUMBERS
     if not nowise:
-        wbasefile = os.path.join(SAGA_DIR, 'hosts', 'wise', 'base_sql_nsa{0}_nw1.fits',format(nsaid))
+        wbasefile = os.path.join(SAGA_DIR, 'nw_hosts', 'base_sql_nsa{0}_nw1.fits'.format(nsaid))
         wbasetable = FitsTable(wbasefile).load()
         id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], wbasetable['RA'], wbasetable['DEC'], 1./3600)
         print 'Read WISE catalog: ', wbasefile
 
-        #TODO: probably need to add columns to sqltable
         sqltable['W1'][id1]    = wbasetable['W1'][id2]
         sqltable['W1ERR'][id1] = wbasetable['W1ERR'][id2]
         sqltable['W2'][id1]    = wbasetable['W2'][id2]
         sqltable['W2ERR'][id1] = wbasetable['W2ERR'][id2]
-        sqltable['W1'][np.isnan(sqltable['W1'])] = 9999
-        sqltable['W1err'][np.isnan(sqltable['W1ERR'])] = 9999
-        sqltable['W2'][np.isnan(sqltable['W2'])] = 9999
-        sqltable['W2err'][np.isnan(sqltable['W2ERR'])] = 9999
+
 
 
 
@@ -168,6 +161,14 @@ def create_base_catalog(nsaid, host,nowise):
     sqltable = saga_tools.nsa_cleanup(nsa, sqltable)
 
     return sqltable
+
+
+##################################
+def _filled_column(name, fill_value, size):
+    """
+    Tool to allow for large strings
+    """
+    return Column([fill_value]*int(size), name)
 
 
 ##################################
