@@ -36,7 +36,7 @@ NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
 
 ##################################  
-def run_hostlist(nowise=False):
+def run_hostlist(nowise=False,flagged_obs_hosts=False):
     """
     For each host in hostlist, create base catalog
     default is to read offline Lang WISE catalogs
@@ -46,9 +46,15 @@ def run_hostlist(nowise=False):
     nowise : bool, optional.  Turn off WISE catalog read
     """
 
-    # READ HOST LIST FROM GOOGLE DOCS
-    hostdata = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634).load()
-    nsa_col  = 'NSAID'
+    # RUN EITHER FULL HOST LIST OR JSUT FLAG ZERO HOSTS, default to flag zero
+    if flagged_obs_hosts:
+        sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
+        nsa_col = 'NSA'
+    else:
+        sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+        nsa_col = 'NSAID'
+
+    hostdata = sheet.load()
 
     # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
     for host in hostdata:
@@ -67,7 +73,7 @@ def create_base_catalog(nsaid, host,nowise):
     """
 
     # READ SQL FILE
-    sqlfile  = os.path.join(SAGA_DIR, 'hosts', 'sql_nsa{0}.fits'.format(nsaid))
+    sqlfile  = os.path.join(SAGA_DIR, 'hosts', 'sql_nsa{0}.fits.gz'.format(nsaid))
     sqltable = Table.read(sqlfile)
 
     # GET BASIC HOST PARAMETERS FROM GOOGLE HOST LIST
@@ -156,9 +162,12 @@ def create_base_catalog(nsaid, host,nowise):
     rmv = REMOVELIST.load()
     sqltable = saga_tools.rm_removelist_obj(rmv, sqltable)
 
-    # CLEAN USING NSAID
+    # CLEAN AND DE-SHRED USING NSAID
     nsa = NSACAT.load()
     sqltable = saga_tools.nsa_cleanup(nsa, sqltable)
+
+    # REMOVE OBJECTS WITH BAD PHOTO-FLAGS
+#    sqltable = saga_tools.photoflags(sqltable)
 
     return sqltable
 
@@ -173,7 +182,7 @@ def _filled_column(name, fill_value, size):
 
 ##################################
 def write_base_fits(nsaid, sqltable):
-    outfits = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits'.format(nsaid))
+    outfits = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits.gz'.format(nsaid))
     if os.path.isfile(outfits):
         os.remove(outfits)
     sqltable.write(outfits, format='fits')
