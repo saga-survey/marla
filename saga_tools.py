@@ -11,6 +11,13 @@ import glob
 import pyspherematch as sm
 
 
+def photoflags(sagatable):
+	binned1   = sagatable['BINNED1'] = 0
+	saturated = sagatable['SATURATED'] != 0
+	baderr    = sagatable['BAD_COUNTS_ERROR'] != 0 
+
+	flgs = binned1 | saturated | baderr
+	sagatable['REMOVE'][flgs] = 1
 
 
 #####################################################################
@@ -178,7 +185,6 @@ def fill_sats_array(sqltable):
 
 
 #####################################################################
-# Take input list and remove objects lised in Google Doc Remove list
 #  For each satellite, search for other nearby satellites
 #  if there are more than one matches, add these extras to repeat spec
 #
