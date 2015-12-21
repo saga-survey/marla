@@ -31,7 +31,7 @@ REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 137908
 
 
 ############################################################################
-def create_allspectra(flagged_obs_hosts=False):
+def compile_saga_spectra(flagged_obs_hosts=False):
 
 
     # RUN EITHER FULL HOST LIST OR JUST FLAG ZERO HOSTS, default to flag zero
@@ -67,7 +67,7 @@ def create_allspectra(flagged_obs_hosts=False):
 			nra  = host['RA']
 			ndec = host['Dec']
 			nsaid  = host[nsa_col]# NAME OF BASE SQL FILES
-			basefile  = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits'.format(nsaid))
+			basefile  = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits.gz'.format(nsaid))
 			basetable = Table.read(basefile)	
 			print basefile
 
@@ -95,12 +95,6 @@ def create_allspectra(flagged_obs_hosts=False):
 			spectable = table.vstack([sdss_spec,basetable[id1]])
 			            		  	
 
-		  # KEEP ONLY GALAXIES 	
-		  	spectable.columns
-			galaxy   = spectable['PHOTPTYPE'] == 3
-			spectable = spectable[galaxy]
-
-
 	      # COMBINE INTO SINGLE ALLSPEC FILE
 			if (nhost == 0):
 				allspec = spectable
@@ -123,28 +117,34 @@ def create_allspectra(flagged_obs_hosts=False):
 
 
 	# WRITE ALL SPECTRA TAKEN
-	file='allspectaken.fits'
-	if os.path.isfile(file):
-		 os.remove(file)
-	print 'writing file: ',file
-	allspec.write(file,format='fits')
+	file  = os.path.join(SAGA_DIR, 'data', 'saga_spectra_all.fits.gz')
+	write_fits(allspec, file)
 
 	# WRITE ALL GOOD SPECTRA
-	msk = allspec['ZQUALITY'] >= 3
-	allgood=allspec[msk]
-	file='allgoodspec.fits'
-	if os.path.isfile(file):
-		 os.remove(file)
-	print 'writing file: ',file
-	allgood.write(file,format='fits')
+	# KEEP ALL GOOD SPECTRA WHICH ARE GALAXIES
+	zql     = allspec['ZQUALITY'] >= 3 
+	rml     = allspec['REMOVE'] == -1 
+	galonly = allspec['PHOTPTYPE'] == 3
+	clean   = zql & rml & galonly
+	allclean = allspec[clean]
 
 
+	file  = os.path.join(SAGA_DIR, 'data', 'saga_spectra_clean.fits.gz')	
+	write_fits(allclean,file)
 
 	return allspec 
 
 
+def write_fits(file, filename):
+	if os.path.isfile(filename):
+		 os.remove(filename)
+	print 'writing file: ',filename
+	file.write(filename,format='fits')
 
 	 
+
+if __name__ == '__main__':
+    create_saga_spectra()
 
  
 
