@@ -2,26 +2,26 @@
 The directory contains scripts to create SAGA base catalogs for the a
 host list.
 
-## Google docs
+### Google docs
 There are three google docs used in the scripts and these must be maintained to run the base catalogs:
 
 	SAGA_HOST_LISTS:  Contains the full SAGA host list and the Flag Zero list.
 	REMOVE_LIST:          Contains a list of objects which have been flagged by hand as junk.
 	SAGA_HOSTS+SATELLITES:  Official file of SAGA common names
 
-## DIRECTORIES AND FILE SSETUP:
+### Directories and File Setup:
 These local directories and files are require to run scripts.
 
-    --  Environment variables:
+--  Environment variables:
     SAGA_DIR:           Top level directory where SAGA data will live on local disk
 	SAGA_DROPBOX:  Local directory for DropBox/SAGA
 
-	-- Create Local Directories:
+-- Create Local Directories:
 	SAGA_DIR/hosts:    Houses the sql downloads and base files
 	SAGA_DIR/cats:      Local copy of NSA catalog
 
 
-	-- Download NSA catalog (nsa_v0_1_2.fits) and place in SAGADIR/cats
+-- Download NSA catalog (nsa_v0_1_2.fits) and place in SAGADIR/cats
 	
 	4.  Casjobs:    To run casjobs, need to setup an account at:
          http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx
