@@ -1,26 +1,27 @@
 # marla
-The directory contains scripts to create SAGA base catalogs for a list
-of SAGA host galaxies.
+The directory contains scripts to create SAGA base catalogs for the a
+host list.
+
+## Google docs
+There are three google docs used in the scripts and these must be maintained to run the base catalogs:
+
+	SAGA_HOST_LISTS:  Contains the full SAGA host list and the Flag Zero list.
+	REMOVE_LIST:          Contains a list of objects which have been flagged by hand as junk.
+	SAGA_HOSTS+SATELLITES:  Official file of SAGA common names
+
+## DIRECTORIES AND FILE SSETUP:
+These local directories and files are require to run scripts.
+
+    --  Environment variables:
+    SAGA_DIR:           Top level directory where SAGA data will live on local disk
+	SAGA_DROPBOX:  Local directory for DropBox/SAGA
+
+	-- Create Local Directories:
+	SAGA_DIR/hosts:    Houses the sql downloads and base files
+	SAGA_DIR/cats:      Local copy of NSA catalog
 
 
---  There are three Google docs used in the scripts below and must be
-maintained to run the base catalogs:
-
-	SAGA_HOST_LISTS:  contains the full SAGA host list and the Flag
-	Zero list.
-	Remove_Lists/targets:  contains a list of objects which have been flagged by hand as junk.
-	SAGA_Hosts+Satellites:  Official file of SAGA common names
-
-
-
--- Directory and file setup:
-	1.   Set environment variable SAGADIR to top level directory where
-         SAGA data will live.
-
-	2. Within SAGADIR, create two directories /hosts to house the sql
-    and base catalogs.   /cats to hold catalogs.
-
-	3.  Download NSA catalogs and place in SAGADIR/cats
+	-- Download NSA catalog (nsa_v0_1_2.fits) and place in SAGADIR/cats
 	
 	4.  Casjobs:    To run casjobs, need to setup an account at:
          http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx
@@ -29,7 +30,8 @@ maintained to run the base catalogs:
 	          >export CASJOBS_PW='my password'
 
 
--- Download sql files.   Downloads *all* objects within 1 degree of all hosts in host list
+## Download sql files.
+SDSS downloads of *all* objects within 1 degree of all hosts in host list
 	> import download_host_sqlfile
 	> download_host_sqlfile.run_query()
 
@@ -40,3 +42,7 @@ maintained to run the base catalogs:
 
 	If you want to include Lang WISE data, need to download _nw files
     into SAGA/nw_hosts/
+
+
+-- Compile all SAGA spectra
+     - download GAMA spectro catalog DR2: http://www.gama-survey.org/dr2/data/cat/SpecCat/v08/
