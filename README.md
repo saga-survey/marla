@@ -13,11 +13,15 @@ There are three google docs used in the scripts and these must be maintained to 
 These local directories and files are require to run scripts.
 
 --  Environment variables:
-    SAGA_DIR:           Top level directory where SAGA data will live on local disk
+
+	SAGA_DIR:           Top level directory where SAGA data will live on local disk
+
 	SAGA_DROPBOX:  Local directory for DropBox/SAGA
 
 -- Create Local Directories:
+
 	SAGA_DIR/hosts:    Houses the sql downloads and base files
+
 	SAGA_DIR/cats:      Local copy of NSA catalog
 
 
