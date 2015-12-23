@@ -64,6 +64,7 @@ def run_query(flagged_obs_hosts=False):
         run_casjob(qry, 'sql_nsa{}'.format(nid))
 
 
+
 ##################################  
 def run_casjob(query, outname):
     """
@@ -90,7 +91,7 @@ def run_casjob(query, outname):
 
 
     # IF FILE DOESN"T ALREADY EXIST, SUBMIT JOB TO CAS
-    if not os.path.isfile(outfits):
+    if not os.path.isfile(outfits+'.gz'):
         job_id = cjob.submit(query, context='DR10')
         code = None
         while code != 5:
@@ -102,6 +103,10 @@ def run_casjob(query, outname):
         print 'downloading', outfits
         cjob.request_and_get_output(outname, 'FITS', outfits)
         cjob.drop_table(outname)
+
+
+        # GZIP FILE
+        os.system('gzip '+ outfits)
 
 
 ##################################  
