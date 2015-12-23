@@ -27,7 +27,7 @@ These local directories and files are require to run scripts.
 -- Casjobs
 
 	To run casjobs, need to setup an account at:
-	(http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx)
+	[http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx](http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx)
 	Then edit your .bash_profile
               > export CASJOBS_WSID='2090870927'   # get your WSID from site above
 	          > export CASJOBS_PW='my password'
