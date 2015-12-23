@@ -133,7 +133,7 @@ def create_base_catalog(nsaid, host,nowise):
 
     # ADD WISE NUMBERS
     if not nowise:
-        wbasefile = os.path.join(SAGA_DIR, 'hosts/nw_hosts', 'base_sql_nsa{0}_nw1.fits'.format(nsaid))
+        wbasefile = os.path.join(SAGA_DIR, 'hosts/nw_hosts', 'base_sql_nsa{0}_nw1.fits.gz'.format(nsaid))
         wbasetable = FitsTable(wbasefile).load()
         id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], wbasetable['RA'], wbasetable['DEC'], 1./3600)
         print 'Read WISE catalog: ', wbasefile
@@ -167,7 +167,7 @@ def create_base_catalog(nsaid, host,nowise):
     sqltable = saga_tools.nsa_cleanup(nsa, sqltable)
 
     # REMOVE OBJECTS WITH BAD PHOTO-FLAGS
-#    sqltable = saga_tools.photoflags(sqltable)
+    sqltable = saga_tools.photoflags(sqltable)
 
     return sqltable
 
