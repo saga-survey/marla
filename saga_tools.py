@@ -12,12 +12,17 @@ import pyspherematch as sm
 
 
 def photoflags(sagatable):
-	binned1   = sagatable['BINNED1'] = 0
+	binned1   = sagatable['BINNED1'] == 0
 	saturated = sagatable['SATURATED'] != 0
 	baderr    = sagatable['BAD_COUNTS_ERROR'] != 0 
 
 	flgs = binned1 | saturated | baderr
-	sagatable['REMOVE'][flgs] = 1
+	sagatable['REMOVE'][flgs] = 3
+
+	for s in sagatable[flgs]:
+		print s['RA'],s['DEC']
+
+	return sagatable
 
 
 #####################################################################
@@ -25,6 +30,7 @@ def photoflags(sagatable):
 #   -1 =  GOOD OBJECT
 #    1 =  ON REMOVE LIST, DO NOT USE  (rm_removelist_obj)
 #    2 = SHREDDED OBJECT BASED ON NSA (nsa_cleanup)
+#    3 = bad photometry flag
 #
 def rm_removelist_obj(removelist,sagatable):
 
