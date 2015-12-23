@@ -2,14 +2,14 @@
 This directory contains scripts to create SAGA base catalogs and
 compile SAGA spectra into a single file.
 
-### Google docs:
+#### Google docs:
 There are three google docs used in the scripts and these must be maintained to run the base catalogs:
 
 	SAGA_HOST_LISTS:  Contains the full SAGA host list and the Flag Zero list.
 	REMOVE_LIST:  Contains a list of objects which have been flagged by hand as junk.
 	SAGA_HOSTS+SATELLITES:  Official file of SAGA common names
 
-### Directories and File Setup:
+#### Directories and File Setup:
 These local directories and files are require to run scripts.
 
 --  Environment variables:
@@ -24,15 +24,14 @@ These local directories and files are require to run scripts.
 	Download NSA catalog (nsa_v0_1_2.fits) and place in SAGADIR/cats
 	Download GAMA catalog (GAMA_SpecObj.fits) and place in SAGADIR/cats
 
--- Casjobs [http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx](http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx)
+-- Casjobs:  [http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx](http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx)
 
-	To run casjobs, need to setup an account, then edit your
-	.bash_profile as:
+	To run casjobs, need to setup an account, then edit your .bash_profile as:
               > export CASJOBS_WSID='2090870927'   # get your WSID from site above
 	          > export CASJOBS_PW='my password'
 
 
-### Download SQL files:
+#### Download SQL files:
 SDSS downloads of *all* objects within 1 degree of all hosts in host
 list
 
