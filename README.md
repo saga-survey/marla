@@ -17,28 +17,30 @@ These local directories and files are require to run scripts.
 	SAGA_DIR:           Top level directory where SAGA data will live on local disk
 	SAGA_DROPBOX:  Local directory for DropBox/SAGA
 
--- Create Local Directories:
+-- Create local directories and download data files:
 
 	SAGA_DIR/hosts:    Houses the sql downloads and base files
-	SAGA_DIR/cats:      Local copy of NSA catalog
+	SAGA_DIR/cats:      Local copy of outside data catalogs
+	Download NSA catalog (nsa_v0_1_2.fits) and place in SAGADIR/cats
+	Download GAMA catalog (GAMA_SpecObj.fits) and place in SAGADIR/cats
 
+-- Casjobs
 
--- Download NSA catalog (nsa_v0_1_2.fits) and place in SAGADIR/cats
-	
-	4.  Casjobs:    To run casjobs, need to setup an account at:
-         http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx
-	     Then edit your .bash_profile
+	To run casjobs, need to setup an account at:
+	http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx
+	Then edit your .bash_profile
               >  export CASJOBS_WSID='2090870927'   # get your WSID from site above
 	          >export CASJOBS_PW='my password'
 
 
-## Download sql files.
+### Download sql files.
 SDSS downloads of *all* objects within 1 degree of all hosts in host list
 	> import download_host_sqlfile
 	> download_host_sqlfile.run_query()
 
 
---  Create value-added SAGA base catalogs.
+### Create SAGA Base Catalogs
+value-added SAGA base catalogs.
 	> import create_base_catalogs
 	> create_base_catalogs.run_query(nowise=1)
 
@@ -46,5 +48,6 @@ SDSS downloads of *all* objects within 1 degree of all hosts in host list
     into SAGA/nw_hosts/
 
 
--- Compile all SAGA spectra
-     - download GAMA spectro catalog DR2: http://www.gama-survey.org/dr2/data/cat/SpecCat/v08/
+###Compile all SAGA spectra
+Compile all SDSS, GAMA and SAGA-aquired spectra, write to file
+- download GAMA spectro catalog DR2: http://www.gama-survey.org/dr2/data/cat/SpecCat/v08/
