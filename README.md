@@ -24,11 +24,10 @@ These local directories and files are require to run scripts.
 	Download NSA catalog (nsa_v0_1_2.fits) and place in SAGADIR/cats
 	Download GAMA catalog (GAMA_SpecObj.fits) and place in SAGADIR/cats
 
--- Casjobs
+-- Casjobs [http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx](http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx)
 
-	To run casjobs, need to setup an account at:
-	[http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx](http://skyserver.sdss3.org/CasJobs/CreateAccount.aspx)
-	Then edit your .bash_profile
+	To run casjobs, need to setup an account, then edit your
+	.bash_profile as:
               > export CASJOBS_WSID='2090870927'   # get your WSID from site above
 	          > export CASJOBS_PW='my password'
 
