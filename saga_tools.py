@@ -11,7 +11,11 @@ import glob
 import pyspherematch as sm
 
 
+#####################################################################
 def photoflags(sagatable):
+	""" 
+	SET REMOVE FLAG = 3 for bad SDSS Photo Flags 
+	"""
 	binned1   = sagatable['BINNED1'] == 0
 	saturated = sagatable['SATURATED'] != 0
 	baderr    = sagatable['BAD_COUNTS_ERROR'] != 0 
@@ -218,8 +222,10 @@ def repeat_sat_cleanup(sagatable):
 
 ##################################
 def saga_name(names,nsaid):
-	"""Read Google doc Observed Host List and
-	parse SAGA name from file"""
+	"""
+	Read Google doc Observed Host List and
+	parse SAGA name from file
+	"""
 
 	saga_names  = names['SAGA Name']
 	saga_nsaids = names['NSA']
