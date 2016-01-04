@@ -62,6 +62,31 @@ def run_hostlist(nowise=False,flagged_obs_hosts=False):
 
 
 
+##################################  
+def run_single_host(nid,nowise=False):
+    """
+    Run base catalog for single host
+
+    ACCEPTS ONLY FLAG_ZERO HOSTS FOR MOMENT!
+
+    Parameters
+    ----------
+    nowise : bool, optional.  Turn off WISE catalog read
+    """
+
+    sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+#    sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
+    hostdata = sheet.load()
+
+
+    msk = hostdata['NSAID'] == nid
+    if np.sum(msk) == 0:
+        print 'NO HOST FOUND'
+    else:
+        catalog = create_base_catalog(nid, hostdata[msk],nowise)
+        write_base_fits(nid, catalog)
+
+
 
 ##################################
 def create_base_catalog(nsaid, host,nowise):
