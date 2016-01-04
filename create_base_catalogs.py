@@ -49,16 +49,14 @@ def run_hostlist(nowise=False,flagged_obs_hosts=False):
     # RUN EITHER FULL HOST LIST OR JSUT FLAG ZERO HOSTS, default to flag zero
     if flagged_obs_hosts:
         sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
-        nsa_col = 'NSA'
     else:
         sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
-        nsa_col = 'NSAID'
 
     hostdata = sheet.load()
 
     # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
     for host in hostdata:
-        nid = host[nsa_col]
+        nid = host['NSAID']
         catalog = create_base_catalog(nid, host,nowise)
         write_base_fits(nid, catalog)
 
