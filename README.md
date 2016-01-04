@@ -50,6 +50,9 @@ Create value-added SAGA base catalogs.
 
 If you want to include Lang WISE data, need to download _nw files into SAGA/nw_hosts/, otherwise, set nowise = 1
 
+To create a single host catalog (not run full host list):
+
+	> create_base_catalogs.run_single_host(nsaid)
 
 ####Compile all SAGA spectra
 Compile all SDSS, GAMA and SAGA-aquired spectra, write to file
