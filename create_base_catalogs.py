@@ -96,7 +96,7 @@ def create_base_catalog(nsaid, host,nowise):
     """
 
     # READ SQL FILE
-    sqlfile  = os.path.join(SAGA_DIR, 'hosts', 'sql_nsa{0}.fits.gz'.format(nsaid))
+    sqlfile  = os.path.join(SAGA_DIR, 'base_catalogs', 'sql_nsa{0}.fits.gz'.format(nsaid))
     sqltable = Table.read(sqlfile)
 
     # GET BASIC HOST PARAMETERS FROM GOOGLE HOST LIST
@@ -205,7 +205,7 @@ def _filled_column(name, fill_value, size):
 
 ##################################
 def write_base_fits(nsaid, sqltable):
-    outfits = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits.gz'.format(nsaid))
+    outfits = os.path.join(SAGA_DIR, 'base_catalogs', 'base_sql_nsa{0}.fits.gz'.format(nsaid))
     if os.path.isfile(outfits):
         os.remove(outfits)
     sqltable.write(outfits, format='fits')
