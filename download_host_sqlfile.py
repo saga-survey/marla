@@ -85,7 +85,7 @@ def run_casjob(query, outname):
     
     # USES POST 
     cjob = CasJobs(base_url='http://skyserver.sdss.org/casjobs/services/jobs.asmx', request_type='POST')
-    outfits = os.path.join(SAGA_DIR, 'hosts/',outname + '.fits')
+    outfits = os.path.join(SAGA_DIR, 'base_catalogs/',outname + '.fits')
 
 
     # IF FILE DOESN"T ALREADY EXIST, SUBMIT JOB TO CAS
