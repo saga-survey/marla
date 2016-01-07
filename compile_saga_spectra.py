@@ -66,7 +66,7 @@ def compile_saga_spectra(flagged_obs_hosts=False):
 			nra  = host['RA']
 			ndec = host['Dec']
 			nsaid  = host['NSAID']# NAME OF BASE SQL FILES
-			basefile  = os.path.join(SAGA_DIR, 'hosts', 'base_sql_nsa{0}.fits.gz'.format(nsaid))
+			basefile  = os.path.join(SAGA_DIR, 'base_catalogs', 'base_sql_nsa{0}.fits.gz'.format(nsaid))
 			basetable = Table.read(basefile)	
 			print basefile
 
