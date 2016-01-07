@@ -35,45 +35,46 @@ def mk_saga_summary():
 	allspec = Table.read(file)
 
 
-	# FIND UNIQUE SAGANAMES
-	msk = allspec['HOST_SAGA_NAME'] != '' 
-	sagaspec = allspec[msk]
-
-
-	# DETERMINE UNIQUE NAMED SAGA HOST LIST
+	# FIND UNIQUE SAGANAMES AND ORDER BY NSATS
+	msk          = allspec['HOST_SAGA_NAME'] != '' 
+	sagaspec     = allspec[msk]
 	sorted_hosts = sort_saga_hosts(sagaspec)
 
 
 
 	# FOR EACH HOST CALCULATE STUFF
 	data = []
-	headers = ['SAGA Name', 'NSAID','RA','Dec','Nsats','MK','Dist']
+	headers = ['SAGA Name', 'NSAID','RA','Dec','Nsats','MK','N_obj','gri (r<21)','gri (r< 20.5)']
 	for host in sorted_hosts:
 
 		print host[1]
-		msk   = sagaspec['HOST_SAGA_NAME'] == host[1]
+		msk1   = sagaspec['HOST_SAGA_NAME'] == host[1] 
+		msk2   = sagaspec['ZQUALITY'] >= 3
+		msk   = msk1 & msk2
 		spec  = sagaspec[msk]
 		nsaid = sagaspec['HOST_NSAID'][msk][0]
 
 		# READ BASE CATALOG
-		basefile  = os.path.join(SAGA_DIR, 'hosts','base_sql_nsa{0}.fits.gz'.format(nsaid))
+		basefile  = os.path.join(SAGA_DIR, 'base_catalogs','base_sql_nsa{0}.fits.gz'.format(nsaid))
 		basetable = Table.read(basefile)	
 
-		bmsk1 = basetable['REMOVE'] == -1
-		bmsk2 = basetable['r'] < 21.0
-		bmsk3 = basetable['RHOST_KPC'] < 300
-		bmsk  = bmsk1 & bmsk2 & bmsk3 
+#		b_crap  = basetable['REMOVE'] != -1
+		b_rmv  = basetable['REMOVE'] == -1
+		b_rvir = basetable['RHOST_KPC'] < 300
+		b_gal = basetable['PHOT_SG'] == 'GALAXY'
+		b_r21  = basetable['r'] < 21.0
+		b_r205 = basetable['r'] < 20.5
 
 
 
-		nobj_all =  np.sum(bmsk1&bmsk2)  # all objects
-		nobj     =  np.sum(bmsk)         # all object w/in virial radius
+#		n_crap    =  np.sum(b_crap)  # all objects
+		nobj_all  =  np.sum(b_rmv)  # all objects
+		nobj_rvir =  np.sum(b_rmv & b_rvir)
+		nobj_gal  =  np.sum(b_rmv & b_rvir & b_gal &b_r21)
+		print nobj_all, nobj_rvir, nobj_gal
 
-		print nobj_all,nobj
-
-
-
-		gri = gri_completeness(basetable[bmsk],sagaspec[msk])
+		gri205  = gri_completeness(basetable[b_rmv & b_rvir & b_gal & b_r205],sagaspec[msk])
+		gri21   = gri_completeness(basetable[b_rmv & b_rvir & b_gal & b_r21],sagaspec[msk])
 
 
 
@@ -84,7 +85,9 @@ def mk_saga_summary():
 		row.append(sagaspec['HOST_DEC'][msk][0])
 		row.append(str(host[0]))
 		row.append(str('{:.1f}'.format(sagaspec['HOST_MK'][msk][0])))
-		row.append(str(sagaspec['HOST_DIST'][msk][0]))
+		row.append(str(nobj_gal))
+		row.append(gri21)
+		row.append(gri205)
 
 
 #		ML1 = ML_completeness(0.1)
@@ -106,16 +109,43 @@ def mk_saga_summary():
 
 
 
-def gri_completeness(base, sagaspec):
+def gri_completeness(base, spec):
 
 	gmr  = base['g'] - base['r'] - 2*base['g_err'] - 2*base['r_err']
 	rmi  = base['r'] - base['i'] - 2*base['r_err'] - 2*base['i_err']
 
-	msk1 = gmr < 0.8
+	msk1 = gmr < 1.0
 	msk2 = rmi < 0.5
-
+	grimsk = msk1&msk2
 	ngri = np.sum(msk1&msk2)
-	print ngri
+
+
+	id1,id2,d = sm.spherematch(base['RA'][grimsk], base['DEC'][grimsk],spec['RA'], spec['DEC'],1./3600,nnearest=1)
+	ngri_spec = np.size(d)
+
+	p = 100.*ngri_spec/ngri
+	
+	compl = '{:02.0f}% ({}/{})'.format(p,ngri_spec,ngri)
+	return compl
+
+
+
+
+def ML_completeness(base, spec, prob):
+
+	ML_msk = base['PCLASS_1'] > prob
+	nML = np.sum(ML_msk)
+
+
+	id1,id2,d = sm.spherematch(base['RA'][ML_msk], base['DEC'][ML_msk],spec['RA'], spec['DEC'],1./3600,nnearest=1)
+	nML_spec = np.size(d)
+
+	p = 100.*nML_spec/nML
+	
+	compl = '{:02.0f}% ({}/{})'.format(p,nML_spec,nML)
+	return compl
+
+
 
 def sort_saga_hosts(sagaspec):
 	"""
