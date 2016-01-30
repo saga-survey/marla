@@ -23,8 +23,6 @@ def photoflags(sagatable):
 	flgs = binned1 | saturated | baderr
 	sagatable['REMOVE'][flgs] = 3
 
-	for s in sagatable[flgs]:
-		print s['RA'],s['DEC']
 
 	return sagatable
 
@@ -66,10 +64,11 @@ def rm_removelist_obj(removelist,sagatable):
 def nsa_cleanup(nsa,sagatable):
 
    # MATCH NSA to SAGA, BEGIN WITH SMALLER RADIUS
-	id1,id2,d = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
-							   nsa['RA'], nsa['DEC'],\
-							   2./3600,nnearest = 1)
-	nmatch = np.size((d > 0.0).nonzero())
+	id2,id1,d = sm.spherematch(nsa['RA'], nsa['DEC'],\
+							sagatable['RA'], sagatable['DEC'],\
+							5./3600,nnearest = 1)
+
+	nmatch = np.size(id1)
 
     # FOR EACH UNIQUE NSA MATCH
 	for i in range(0,nmatch-1):
@@ -108,7 +107,8 @@ def nsa_cleanup(nsa,sagatable):
 		sagatable['REMOVE'][sid]   = -1   
 		sagatable['ZQUALITY'][sid] = 4
 		sagatable['TELNAME'][sid]  = 'NSA'
-#		sagatable['phot_sg'][sid]  = 3
+		sagatable['PHOTPTYPE'][sid]= 3
+		sagatable['PHOT_SG'][sid]  = 'GALAXY'
 		sagatable['RA'][sid]       = nra
 		sagatable['DEC'][sid]      = ndec
 		sagatable['SPEC_Z'][sid]   = nsa['Z'][nid]
@@ -117,19 +117,20 @@ def nsa_cleanup(nsa,sagatable):
 		sagatable['OBJ_NSAID'][sid]= nsa['NSAID'][nid]
 
 		# REPLACE PHOTOMETRY
-		mag = 22.5 - 2.5*np.log10(nsa['NMGY'][nid])
-		An  = nsa['EXTINCTION'][nid]
+		mag = 22.5 - 2.5*np.log10(nsa['SERSICFLUX'][nid])
+		mag[np.isnan(mag)]= -99
 
-		sagatable['u'][sid]= mag[2] + An[2]     # add back in unextinction corrected
-		sagatable['g'][sid]= mag[3] + An[3]  
-		sagatable['r'][sid]= mag[4] + An[4]  
-		sagatable['i'][sid]= mag[5] + An[5]  
-		sagatable['z'][sid]= mag[6] + An[6]  
+		sagatable['u'][sid]= mag[2]
+		sagatable['g'][sid]= mag[3]
+		sagatable['r'][sid]= mag[4]
+		sagatable['i'][sid]= mag[5]
+		sagatable['z'][sid]= mag[6]
 
 
-#		sagatable['expRad_r'][sid] = -99#nsa['PETROTH90']
+
+#		sagatable['expRad_r'][sid] = nsa['SERSIC_TH50'][nid]
 #		sagatable['sb_exp_r'][sid] = -99#nsa['PETROTH90']
-#		sagatable['petroR90_r'][sid] = nsa['PETROTH90'][nid]
+#		sagatable['petroR90_r'][sid] = nsa['PETROTH90'][nid]#
 #		sagatable['petroR50_r'][sid] = nsa['PETROTH50'][nid]
 #		sagatable['petroMag_r'][sid] = -99#nsa['PETROTH90']
 
@@ -137,6 +138,41 @@ def nsa_cleanup(nsa,sagatable):
 	return sagatable
 
 
+
+
+#####################################################################
+# FOR GALAXIES BEYOND NSA REDSHIFT CUTOFF
+# FIND NEARBY SHREDS W/IN REFF AND REMOVE
+#
+def sdss_cleanup(sagatable):
+
+	# FOR GALAXIES WITH SDSS SPEC BEYOND NSA REDSHIFT CUTOFF
+	s1 = sagatable['SPEC_Z'] > 0.05
+	sdss_spec = sagatable[s1]
+
+
+	# FOR EACH SDSS WITH REDSHIFT > NSA CUTOFF
+	for obj in sdss_spec:
+
+       # USE TWICE REFF
+		reff = 2*obj['PETROR90_R']
+		rcen = obj['RA']
+		dcen = obj['DEC']
+
+		xx = 3600*(sagatable['RA'] - rcen)
+		yy = 3600*(sagatable['DEC'] - dcen)  # need a cosine?
+		r = (xx/reff)**2 + (yy/reff)**2
+
+		m1 = r < 1.   
+
+		# REMOVE SHREDDED OBJECTS NEAR SDSS SPECTRUM 
+		sagatable['REMOVE'][m1] = 2  
+
+	# BUT KEEP ORIGINAL OBJECT
+	sagatable['REMOVE'][s1] = -1
+
+
+	return sagatable
 
 
 #####################################################################
@@ -157,7 +193,8 @@ def fill_sats_array(sqltable):
 
 	# GALAXY ONLY, OBJECTS WITH SPECTRA ONLY
 	galcut = (sqltable['SPEC_Z'] != -1) & \
-	  	     (sqltable['PHOTPTYPE'] == 3) 
+	  	     (sqltable['PHOTPTYPE'] == 3) & \
+	  	     (sqltable['ZQUALITY'] > 2)
 
 
 	# SATS = 0, ALL HIGH-Z (z > 0.05) GALAXIES
@@ -177,12 +214,13 @@ def fill_sats_array(sqltable):
 	vhost= sqltable['HOST_VHOST']
 	robj = sqltable['RHOST_KPC']
 
-	vcut = np.abs(vdiff) < 200
+	vcut = np.abs(vdiff) < 250
 	rcut = (robj < 300) &  (robj > 20)
 	ncut = sqltable['MASKNAME'] != 'ned'  # NED LOWZ VELOCITIES HAVE PROBLEMS
+
 	sats = galcut & vcut & rcut & ncut
 		      
-	sqltable['SATS'][sats] = 1
+	sqltable['SATS'][sats] = 1.
 	return sqltable
 
 
@@ -201,21 +239,26 @@ def fill_sats_array(sqltable):
 def repeat_sat_cleanup(sagatable):
 
 
+	sats = sagatable['SATS'] == 1 #& s['ZQUALITY'] > 2
 
-	isat = np.where(sagatable['SATS'] == 1)[0]
-	print isat.size
+	for s in sagatable[sats]:
+		if s['REMOVE'] == -1:
 
-	for i in isat:
-		if sagatable['REMOVE'][i] == -1:
-
-			rsat    = sagatable['RA'][i]
-			dsat    = sagatable['DEC'][i]
+			rsat    = s['RA']
+			dsat    = s['DEC']
 
 			m1,m2,d = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
 			                     [rsat],[dsat], 10./3600)
-			
-#			sagatable['REMOVE'][m1] = 3
-#			sagatable['REMOVE'][i]  = -1
+
+			m = d != 0
+			if np.sum(m):
+				r = m1[m]
+				k = m1[d ==0]
+				sagatable['REMOVE'][r] = 3
+				sagatable['REMOVE'][k] = -1
+
+				sagatable['SATS'][r] = -99
+				sagatable['SATS'][k] = 1
 
 
 	return sagatable
