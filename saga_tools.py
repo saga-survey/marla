@@ -6,6 +6,8 @@ import numpy as np
 from astropy.io import ascii
 from astropy.io import fits
 from astropy import table
+from astropy.coordinates import SkyCoord
+from astropy import units as u
 import os
 import glob
 import pyspherematch as sm
@@ -147,29 +149,36 @@ def nsa_cleanup(nsa,sagatable):
 def sdss_cleanup(sagatable):
 
 	# FOR GALAXIES WITH SDSS SPEC BEYOND NSA REDSHIFT CUTOFF
-	s1 = sagatable['SPEC_Z'] > 0.05
-	sdss_spec = sagatable[s1]
+	# AND GOOD MEASURE OF RADIUS
+	s1 = sagatable['SPEC_Z'] > 0.05 
+	s2 = sagatable['PETRORADERR_R'] > 0.
+	s3 = sagatable['PETRORAD_R']/sagatable['PETRORADERR_R'] > 2.
+
+	smsk = s1&s2&s3
+	sdss_spec = sagatable[smsk]
 
 
 	# FOR EACH SDSS WITH REDSHIFT > NSA CUTOFF
 	for obj in sdss_spec:
 
        # USE TWICE REFF
-		reff = 2*obj['PETROR90_R']
-		rcen = obj['RA']
-		dcen = obj['DEC']
+		reff = 2.*obj['PETRORAD_R']
 
-		xx = 3600*(sagatable['RA'] - rcen)
-		yy = 3600*(sagatable['DEC'] - dcen)  # need a cosine?
-		r = (xx/reff)**2 + (yy/reff)**2
 
-		m1 = r < 1.   
+		catsc = SkyCoord(u.Quantity(sagatable['RA'], u.deg), u.Quantity(sagatable['DEC'], u.deg))
+		objcoords = SkyCoord(obj['RA']*u.deg, obj['DEC']*u.deg)
+		seps = catsc.separation(objcoords)
+
+		robj = seps.to(u.arcsec).value
+
+		m1 = robj < reff   
+		print np.sum(m1),obj['RA'], obj['DEC']
 
 		# REMOVE SHREDDED OBJECTS NEAR SDSS SPECTRUM 
-		sagatable['REMOVE'][m1] = 2  
+		sagatable['REMOVE'][m1] = 4  
 
 	# BUT KEEP ORIGINAL OBJECT
-	sagatable['REMOVE'][s1] = -1
+	sagatable['REMOVE'][smsk] = -1
 
 
 	return sagatable
