@@ -55,18 +55,22 @@ def plot_hosts():
 
 
 
-	fig = plt.figure(figsize=(7, 3))
+	fig = plt.figure(figsize=(8, 3))
 	fig.subplots_adjust(bottom=0.15, top=0.9,
                     left=0.12, right=0.95, wspace=0.3)
 
 
 	# first plot the flux distribution
 	ax = fig.add_subplot(121)
-	ax.plot(all['K_abs'],ri_all, 'o')
-	ax.plot(hosts['K_abs'],ri, 'o')
+	ax.plot(all['K_abs'],ri_all, 'k.')
+	ax.plot(hosts['K_abs'],ri, 'bo')
 	ax.plot(hosts['K_abs'][m],ri[m], 'ro')
 
-	ax.set_ylim(-0.1, 0.8)
+	#MW
+	ax.plot([-24.02],[0.33],'y*',markersize=14,color='#ffcc11')
+
+
+	ax.set_ylim(0.1, 0.7)
 	ax.set_xlim(-24.9,-22.5)
 	ax.set_ylabel('(r-i)')
 	ax.set_xlabel('$M_K$')
@@ -75,12 +79,16 @@ def plot_hosts():
 
 # second plot the flux distribution
 	ax = fig.add_subplot(122)
-	ax.plot(all['r_abs'],ri_all, 'o',label='All Galaxies')
-	ax.plot(hosts['r_abs'],ri, 'o',label='MW Hosts')
+	ax.plot(all['r_abs'],ri_all, 'k.',label='All Galaxies')
+	ax.plot(hosts['r_abs'],ri, 'bo',label='MW Hosts')
 	ax.plot(hosts['r_abs'][m],ri[m], 'ro',label='This Paper')
 
-	#ax.set_xlim(-0.1, 2.1)
-	ax.set_ylim(-0.1,0.8)
+	ax.plot([-20.2],[0.33],'y*',label='Milky Way',color='#ffcc11')
+	ax.plot([-20.2],[0.33],'y*',markersize=14,color='#ffcc11')
+
+
+	ax.set_xlim(-21.5,-19)
+	ax.set_ylim(0.1,0.7)
 	ax.set_ylabel('(r-i)')
 	ax.set_xlabel('$M_r$')
 
@@ -88,7 +96,7 @@ def plot_hosts():
     #    ha='left', va='top', transform=ax.transAxes,
     #    bbox=dict(ec='none', fc='w'))
 	handles, labels = ax.get_legend_handles_labels()
-	ax.legend(handles, labels)
+	ax.legend(handles, labels,fontsize=6)
 
 
 #	plt.show()
