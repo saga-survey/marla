@@ -15,19 +15,24 @@ from astropy.io import ascii
 from astropy.io import fits
 from astropy import table
 from astropy.table import Table
+from astropy.coordinates import SkyCoord
+from astropy import units as u
 import os
 import glob
 import pyspherematch as sm
 
-from FileLoader import GoogleSheets
+
+from FileLoader import GoogleSheets, FitsTable
 import saga_tools
 import read_saga_spectra
 
 SAGA_DIR = os.environ['SAGA_DIR']
+SAGA_DROPBOX= os.environ['SAGA_DROPBOX']
 
 
 # GOOGLE DOCUMENTS URLs
 REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
+NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
 
 
 ############################################################################
@@ -39,9 +44,9 @@ def compile_saga_spectra(flagged_obs_hosts=False):
         sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
     else:
         sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+	hostdata     = sheet.load()
 
-
-	hostdata = sheet.load()# READ ALL NON-SDSS SPECTRA AND COMBINE INTO SINGLE TABLE
+	# READ ALL NON-SDSS SPECTRA AND COMBINE INTO SINGLE TABLE
 	gama_table   = read_saga_spectra.read_gama()
 	mmt_table    = read_saga_spectra.read_mmt()
 	aat_table    = read_saga_spectra.read_aat()
@@ -49,10 +54,14 @@ def compile_saga_spectra(flagged_obs_hosts=False):
 	wiyn_table   = read_saga_spectra.read_wiyn()
 	deimos_table = read_saga_spectra.read_deimos()
 
-	#pdb.set_trace()
-	sagaspec = table.vstack([gama_table,mmt_table,aat_table,imacs_table,wiyn_table],\
+	# LEAST TO MOST IMPORTANT
+	sagaspec = table.vstack([wiyn_table,imacs_table,gama_table,deimos_table,aat_table,mmt_table],\
 						     metadata_conflicts='silent')
 
+
+#	zq = sagaspec['ZQUALITY'] > 2
+	# need to write script to resolve repeats properly
+#	sagaspec=sagaspec[zq]
 
 
  # FOR EACH FLAG ZERO HOST OR NON-FLAG ZERO OBSERVED HOST
@@ -60,64 +69,77 @@ def compile_saga_spectra(flagged_obs_hosts=False):
  #  KEEP ONLY SDSS SPECTRA AND MATCHES FROM OTHER SOURCES
 	nhost = 0
 	for host in hostdata:
-	    flag  = host['flag']   # SELECT ONLY NON_FLAG0
+	    flag  = host['flag']   # SELECT ONLY NON_FLAG0#	    
 	    if flag == 0:
-
 			nra  = host['RA']
 			ndec = host['Dec']
 			nsaid  = host['NSAID']# NAME OF BASE SQL FILES
 			basefile  = os.path.join(SAGA_DIR, 'base_catalogs', 'base_sql_nsa{0}.fits.gz'.format(nsaid))
 			basetable = Table.read(basefile)	
-			print basefile
+			print nsaid
 
 
-			# KEEP SDSS SPECTRA
-			sdss_msk =  basetable['ZQUALITY'] == 4 
-			sdss_spec = basetable[sdss_msk]
-
-
-
-		   # MATCH GAMA+SAGA IN SDSSS TO GET PHOTOMETRIC PROPERTIES
-			id1,id2,d = sm.spherematch(basetable['RA'], basetable['DEC'],sagaspec['RA'], sagaspec['DEC'],1./3600,nnearest=1)
-			nmatch = np.size((d > 0.0).nonzero())
-
-			if (nmatch != 0):
-				basetable['TELNAME'][id1]    = sagaspec['TELNAME'][id2]
-				basetable['MASKNAME'][id1]   = sagaspec['MASKNAME'][id2]
-				basetable['ZQUALITY'][id1]   = sagaspec['ZQUALITY'][id2]
-				basetable['SPEC_Z'][id1]     = sagaspec['SPEC_Z'][id2]
-#				basetable['SPECOBJID'][id1]  = sagaspec['specobjid'][id2]
-	#				sdss_spec['spec_repeat'][id1]= sagaspec[id2]['spec_z']
+			# CALCULATE OBJECT DISTANCE FROM HOST
+			catsc = SkyCoord(u.Quantity(sagaspec['RA'], u.deg), u.Quantity(sagaspec['DEC'], u.deg))
+			hostcoords = SkyCoord(nra*u.deg, ndec*u.deg)
+			seps  = catsc.separation(hostcoords)
+			rhost = seps.to(u.deg).value
+			host_spec_objs = rhost < 1.0
 
 
 		  # COMBINE SDSS SPECTRA AND SAGA SPECTRA	
-			spectable = table.vstack([sdss_spec,basetable[id1]])
-			            		  	
+			sdss_table   = read_saga_spectra.read_sdss(basetable)
+			hostspec     = table.vstack([sdss_table,sagaspec[host_spec_objs]])
+
+
+		   # MATCH ALL SPECTRA TO BASECATALOG, ADD SPEC DETAILS
+			id2,id1,d = sm.spherematch(hostspec['RA'], hostspec['DEC'],basetable['RA'], basetable['DEC'],3./3600,nnearest=1)
+			basetable['TELNAME'][id1]    = hostspec['TELNAME'][id2]
+			basetable['MASKNAME'][id1]   = hostspec['MASKNAME'][id2]
+			basetable['ZQUALITY'][id1]   = hostspec['ZQUALITY'][id2]
+			basetable['SPEC_Z'][id1]     = hostspec['SPEC_Z'][id2]
+			basetable['SPECOBJID'][id1]  = hostspec['specobjid'][id2]
+			basetable['SPEC_REPEAT'][id1]  = hostspec['TELNAME'][id2]
+
+
+			m = basetable['SPEC_Z'] != -1
+
 
 	      # COMBINE INTO SINGLE ALLSPEC FILE
 			if (nhost == 0):
-				allspec = spectable
+				allspec = basetable[m]
 			if (nhost > 0):
-				allspec = table.vstack([allspec,spectable])  # APPEND			
+				allspec = table.vstack([allspec,basetable[m]])  # APPEND			
 			nhost=nhost+1	
 
-
-	# DOUBLE CHECK TO REMOVE OBJECTS ON REMOVE LIST
-	rmv = REMOVELIST.load()
-	allspec = saga_tools.rm_removelist_obj(rmv,allspec)
 
 
 	# INITIALIZE SATS ARRAY (3=primary, 2=lowz, 1=satellite)	
 	allspec = saga_tools.fill_sats_array(allspec)
 
+
 	# CLEAN UP REPEAT ENTRY OF SATELLITES 
-#	allspec = saga_tools.repeat_sat_cleanup(allspec)
+	allspec = saga_tools.repeat_sat_cleanup(allspec)
+
+
+
+	# HACK FOR THE MOMENT
+	m1=allspec['REMOVE'] == 3 
+	m2=allspec['SATS'] == 1
+	m=m1&m2
+	allspec['REMOVE'][m] = -1    # keep remove = 3 satelites
+
+	m1=allspec['REMOVE'] == 2
+	m2=allspec['SATS'] == 1
+	m=m1&m2
+	allspec['SATS'][m] = -1     # remove remove=2 satellites
 
 
 
 	# WRITE ALL SPECTRA TAKEN
-	file  = os.path.join(SAGA_DIR, 'data', 'saga_spectra_all.fits.gz')
+	file  = os.path.join(SAGA_DIR, 'data', 'saga_spectra_dirty.fits.gz')
 	write_fits(allspec, file)
+
 
 	# WRITE ALL GOOD SPECTRA
 	# KEEP ALL GOOD SPECTRA WHICH ARE GALAXIES
