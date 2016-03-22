@@ -14,9 +14,10 @@ import pyspherematch as sm
 
 
 #####################################################################
-def photoflags(sagatable):
+def photoflags(addlist,sagatable):
 	""" 
-	SET REMOVE FLAG = 3 for bad SDSS Photo Flags 
+	SET REMOVE FLAG = 3 for bad SDSS Photo Flags
+	SET BACK TO REMOVE = -1 if in by-hand list  
 	"""
 	binned1   = sagatable['BINNED1'] == 0
 	saturated = sagatable['SATURATED'] != 0
@@ -24,6 +25,19 @@ def photoflags(sagatable):
 
 	flgs = binned1 | saturated | baderr
 	sagatable['REMOVE'][flgs] = 3
+
+
+   # MATCH sql OBJECTS TO THOSE IN GOOGLE DOC ADD LIST
+	id1,id2,d = sm.spherematch(sagatable['RA'], sagatable['DEC'],\
+		           addlist.field('Targ_RA'), addlist.field('Targ_Dec'),\
+		           1./3600,nnearest=1)
+
+	nmatch = np.size((d > 0.0).nonzero())
+	print "add list objects = ",nmatch
+
+  # SET REMOVED FLAG BACK TO -1
+  	if (nmatch > 0):
+		sagatable['REMOVE'][id1] = -1
 
 
 	return sagatable
@@ -60,8 +74,10 @@ def rm_removelist_obj(removelist,sagatable):
 #  USE NSA TO CREATE UP REPEATED OR SHREDDED OBJECTS
 #  FIND NSA MATCH, THEN USE PETROTH90 RADIUS TO SET REMOVE FLAG
 #   -1 = GOOD OBJECT
-#    1 =  ON REMOVE LIST, DO NOT USE  (rm_removelist_obj)
+#    1 =  ON Google REMOVE LIST, DO NOT USE  (rm_removelist_obj)
 #    2 = SHREDDED OBJECT BASED ON NSA (nsa_cleanup)
+# 	 3 = photoflags
+#    4 = SHREDDED OBJECT BASED ON SDSS (z > 0.05)
 #
 def nsa_cleanup(nsa,sagatable):
 
@@ -152,9 +168,10 @@ def sdss_cleanup(sagatable):
 	# AND GOOD MEASURE OF RADIUS
 	s1 = sagatable['SPEC_Z'] > 0.05 
 	s2 = sagatable['PETRORADERR_R'] > 0.
-	s3 = sagatable['PETRORAD_R']/sagatable['PETRORADERR_R'] > 2.
+	s3 = sagatable['PETRORAD_R']/sagatable['PETRORADERR_R'] > 2.  # better than 50% error
+	s4 = sagatable['REMOVE'] == -1
 
-	smsk = s1&s2&s3
+	smsk = s1&s2&s3#&s4
 	sdss_spec = sagatable[smsk]
 
 
@@ -162,7 +179,7 @@ def sdss_cleanup(sagatable):
 	for obj in sdss_spec:
 
        # USE TWICE REFF
-		reff = 2.*obj['PETRORAD_R']
+		reff = 1.25*obj['PETRORAD_R']
 
 
 		catsc = SkyCoord(u.Quantity(sagatable['RA'], u.deg), u.Quantity(sagatable['DEC'], u.deg))
@@ -172,7 +189,8 @@ def sdss_cleanup(sagatable):
 		robj = seps.to(u.arcsec).value
 
 		m1 = robj < reff   
-		print np.sum(m1),obj['RA'], obj['DEC']
+		if np.sum(m1) > 3:
+			print np.sum(m1),obj['RA'], obj['DEC'],obj['REMOVE']
 
 		# REMOVE SHREDDED OBJECTS NEAR SDSS SPECTRUM 
 		sagatable['REMOVE'][m1] = 4  
@@ -288,6 +306,35 @@ def saga_name(names,nsaid):
 		sname = saga_names[msk]
 
 	return sname	
+
+#####################################################################
+#  ADD EXISTING SAGA SPECTRA TO BASE CATALOGS
+#
+def add_saga_spec(sagaspec,sqltable):
+
+	
+   # MATCH sql OBJECTS TO THOSE IN SAGA SPEC
+	id1,id2,d = sm.spherematch(sqltable['RA'], sqltable['DEC'],\
+				   sagaspec['RA'], sagaspec['DEC'],\
+		           1./3600,nnearest=1)
+
+	nmatch = np.size((d >= 0.0).nonzero())
+	print "adding existing SAGA SPECTRA = ",nmatch
+
+  # SET REMOVED FLAG TO 1
+  	if (nmatch > 0):
+		sqltable['SPEC_Z'][id1]   = sagaspec['SPEC_Z'][id2]
+		sqltable['ZQUALITY'][id1] = sagaspec['ZQUALITY'][id2]
+		sqltable['TELNAME'][id1]  = sagaspec['TELNAME'][id2]
+		sqltable['MASKNAME'][id1] = sagaspec['MASKNAME'][id2]
+		sqltable['SPECOBJID'][id1]    = sagaspec['SPECOBJID'][id2]
+		sqltable['SPEC_REPEAT'][id1]  = sagaspec['SPEC_REPEAT'][id2]
+		sqltable['SATS'][id1]  = sagaspec['SATS'][id2]
+		sqltable['REMOVE'][id1]  = sagaspec['REMOVE'][id2]
+
+
+	return sqltable
+
 
 
 
