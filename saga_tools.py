@@ -248,14 +248,13 @@ def fill_sats_array(sqltable):
 	sats = galcut & vcut & rcut & ncut
 		      
 	sqltable['SATS'][sats] = 1.
-	return sqltable
 
 
 	# SATS = 3,FIND THE PRIMARY GALAXY
-#	prim  = galcut & \
-#		   vdiff < vhost + 20 & vdiff > vhost - 20 \
-#		   sqltable['rhost_kpc'] > 20   
-
+	msk = sqltable['OBJ_NSAID'] == sqltable['HOST_NSAID']
+	sqltable['SATS'][msk] = 3
+	print a
+	return sqltable
 
 
 
