@@ -49,10 +49,11 @@ def read_gama():
 	telname = ['GAMA' for i in one]
 	spec_repeat = ['GAMA' for i in one]
 	gama_specobjid = gama['SPECID']
+	gamaname = gama['CATAID'].astype('S80')
 
 
   # CREATE GAMA SPEC TABLE
-	gama_table = table.table.Table([gama['RA'], gama['DEC'],gama['CATAID'],one,\
+	gama_table = table.table.Table([gama['RA'], gama['DEC'],gamaname,one,\
 								    gama['z'],gama['nq'],telname,spec_repeat], \
 	     				            names=('RA', 'DEC', 'MASKNAME','specobjid',\
  		                            'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
