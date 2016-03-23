@@ -35,6 +35,7 @@ def get_jpg(ra,dec,outname):
         urllib.urlretrieve(sdssurl, outname)
         return sdssurl
 
+############################################################################
 def get_satellites():
 
 	# READ SPECTRA
@@ -52,3 +53,6 @@ def get_satellites():
 		outjpg = str(s['HOST_SAGA_NAME'])+ '_' +str(s['r']).format()  +'.jpg'
 		print outjpg,s['RA'],s['DEC']
 		get_jpg(s['RA'],s['DEC'],outjpg)
+
+
+
