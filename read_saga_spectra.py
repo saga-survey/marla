@@ -52,7 +52,7 @@ def read_gama():
 
 
   # CREATE GAMA SPEC TABLE
-	gama_table = table.table.Table([gama['RA'], gama['DEC'],gama['URL_IMG'],one,\
+	gama_table = table.table.Table([gama['RA'], gama['DEC'],gama['CATAID'],one,\
 								    gama['z'],gama['nq'],telname,spec_repeat], \
 	     				            names=('RA', 'DEC', 'MASKNAME','specobjid',\
  		                            'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
@@ -119,7 +119,7 @@ def read_aat():
 
 		# ACCEPT ALL GOOD SPECTRA
 		adata = ascii.read(afile, data_start=0, delimiter=' ')
-		msk = adata.field('col7') >= 1  # ONLY OBJECTS WITH QUALITY GE 3
+		msk = adata.field('col7') >= 1  # ONLY OBJECTS WITH QUALITY GE 1
 		aat = adata[msk]
 
 		# PLACE HOLDER ARRAYS	
@@ -235,14 +235,40 @@ def read_wiyn():
 	return wiyn_table
 
 
+def read_sdss(base):
+
+  	msk  = base['ZQUALITY'] == 4
+	sdss = base[msk]
+
+
+  # PLACE HOLDER ARRAYS	
+
+  # CREATE GAMA SPEC TABLE
+	sdss_table = table.table.Table([sdss['RA'], sdss['DEC'],sdss['MASKNAME'],sdss['OBJID'],\
+								    sdss['SPEC_Z'],sdss['ZQUALITY'],sdss['TELNAME'],sdss['SPEC_REPEAT']], \
+	     				            names=('RA', 'DEC', 'MASKNAME','specobjid',\
+ 		                            'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+
+	return sdss_table
+
+
 ############################################################################
-# READ WIYN ZSPEC CATALOGS
+# CREATE DEIMOS ZSPEC CATALOGS
 def read_deimos():
 
-# CREATE WIYN SPEC TABL
+# CREATE DEIMOS SPEC TABL
+	#  [ ODYSSEY, ODSSEY-Pen]
+	ra   = [247.825839103498]
+	dec  = [20.210825313885]
+	mask = ['deimos2014']
+	sid  = [0]
+	v    = [2375/3e5]
+	zq   = [4]
+	tel  = ['DEIMOS']
 
-	deimos_table = table.table.Table([[247.82589], [20.210879], ['deimos2014'], [0],\
-									    [2375/3e5], [4], ['DEIMOS'],['DEIMOS']], \
+
+	deimos_table = table.table.Table([ra, dec, mask, sid,\
+									    v, zq, tel, tel], \
 			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
 			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
 	return deimos_table
