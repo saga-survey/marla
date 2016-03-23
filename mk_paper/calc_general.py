@@ -30,117 +30,37 @@ REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 137908
 def calc_general():
 
 
-	# READ SPECTRA
-	file = SAGA_DIR +'/data/saga_spectra_all.fits.gz'
+	# CALCULATE NUMBERS FOR MW SIM SECTION
+
+
+	# CALCULATE NUMBERS FOR SPECTRA SECTION
+	file = SAGA_DIR +'/data/saga_spectra_dirty.fits.gz'
 	allspec = Table.read(file)
 
-	good = allspec['ZQUALITY'] > 2
+	good1 = allspec['ZQUALITY'] > 2
+	good2 = allspec['REMOVE'] == -1
+	good = good1 & good2
 
+	all = mmt&aat&imacs&wiyn
+	print '\\newcommand{\\allspec}{'+str(np.sum(all&good))+" }"
+	print
 
-	# ARE THERE SPECTRA WITH BAD PHOTOMERTY?   
-	# IF SO, REMOVE FOR CALCULATIONS BELOW
-	msk = allspec['REMOVE'] != -1
-	sat = allspec['SATS'] == 1
-	print np.sum(msk & good)
-	for a in allspec[msk&good&sat]:
-		print a['RA'],a['DEC'],a['BINNED1'],a['BAD_COUNTS_ERROR'],a['SATURATED']
-
-	# FIND UNIQUE SAGANAMES AND ORDER BY NSATS
-	msk          = allspec['HOST_SAGA_NAME'] != '' 
-	sagaspec     = allspec[msk]
-	sorted_hosts = sort_saga_hosts(sagaspec)
-
-
-
-	# NUMBER OF NON-SDSS SPECTRA
-
-
-
-	# NUMBER OF SPECTRA BY TELESCOPE
+	# MMT
 	mmt = allspec['TELNAME'] == 'MMT'
- 	aat = allspec['TELNAME'] == 'AAT'
- 	imacs = allspec['TELNAME'] == 'IMACS'
- 	wiyn = allspec['TELNAME'] == 'WIYN'
+	print '\\newcommand{\\mmtspec}{'+str(np.sum(mmt&good))+" }"
 
- 	print 'Number of good/taken MMT spectra = ',np.sum(mmt & good), np.sum(mmt)
- 	print 'Number of good/taken AAT spectra = ',np.sum(aat & good), np.sum(aat)
- 	print 'Number of good/taken IMACS spectra = ',np.sum(imacs & good), np.sum(imacs)
+	# AAT
+	aat = allspec['TELNAME'] == 'AAT'
+	print '\\newcommand{\\aatspec}{'+str(np.sum(aat&good))+" }"
 
-	# NUMBER OF STELLAR SPECTRA AND ANY SATELLITES?
+	# IMACS
+	imacs = allspec['TELNAME'] == 'IMACS'
+	print '\\newcommand{\\imacsspec}{'+str(np.sum(imacs&good))+" }"
 
-
-
-
-def sort_saga_hosts(sagaspec):
-	"""
-	Find unique named SAGA hosts in allspec. 
-	Sort names by nsats
-	"""
+	# WIYN
+	wiyn = allspec['TELNAME'] == 'WIYN'
+	print '\\newcommand{\\wiynspec}{'+str(np.sum(wiyn&good))+" }"
 
 
-
-	# FIND UNIQUE SAGA NAMES and CALCULATE NSATS
-	unique_hosts = []
-	nsats        = []
-	for s in sagaspec:
-		if s['HOST_SAGA_NAME'] not in unique_hosts: 
-			unique_hosts.append(s['HOST_SAGA_NAME'])
-
-			# CALCULATE NSATS FOR GIVEN HOST
-			msk1 = sagaspec['HOST_SAGA_NAME'] == s['HOST_SAGA_NAME']
-			msk2 = sagaspec['SATS'] == 1
-			msk = msk1 & msk2
-			n = np.sum(msk)
-
-			nsats.append([n,s['HOST_SAGA_NAME']])
-
-
-	sorted_hosts = sorted(nsats,reverse=True)
-	return sorted_hosts
-
-
-###############################################
-def tex_table_header():
-	table_header = """
-		\documentclass[8pt]{article} 
-		\usepackage{natbib}
-		\usepackage{fancyhdr}
-		\usepackage{graphics}
-		\pagestyle{fancy}
-		\setlength{\ textwidth}{8.5in}
-		\setlength{\ textheight}{8.30in}
-		\setlength{\ topmargin}{20pt}
-		\setlength{\oddsidemargin}{-1in}
-		\setlength{\hoffset}{0pt}
-		\setlength{\ voffset}{10pt}
-		\ begin{document}
-		\ begin{center}
-		\ begin{table}
-
-
-	"""
-	table_header = re.sub(' ', '', table_header).strip()
-#	table_header = re.sub('\s+', ' ', table_header).strip()
-
-	return table_header
-
-
-
-def tex_table_footer():
-	table_foot = """
-
-		\end{table}
-		\end{center}
-		\end{document}
-	"""
-	table_foot = re.sub(' ', '', table_foot).strip()
-	return table_foot
-
-
-
-if __name__ == '__main__':
-    create_saga_spectra()
-
- 
 
  

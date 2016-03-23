@@ -123,10 +123,10 @@ def mk_saga_summary():
 
 def gri_completeness(base, spec):
 
-	gmr  = base['g'] - base['r'] #- 2*base['g_err'] - 2*base['r_err']
-	rmi  = base['r'] - base['i'] #- 2*base['r_err'] - 2*base['i_err']
+	gmr  = base['g'] - base['r'] - 2*base['g_err'] - 2*base['r_err']
+	rmi  = base['r'] - base['i'] - 2*base['r_err'] - 2*base['i_err']
 
-	msk1 = gmr < 1.0
+	msk1 = gmr < 0.8
 	msk2 = rmi < 0.5
 	grimsk = msk1&msk2
 	ngri = np.sum(msk1&msk2)

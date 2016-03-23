@@ -142,7 +142,7 @@ def plot_colorcolor():
 		rmie  = obj['r'] - obj['i'] - 2*obj['r_err'] - 2*obj['i_err']
 
 
-		print gmr,gmre,obj['SATS'],obj['PHOTPTYPE'],obj['SPEC_Z'],obj['REMOVE']
+#		print gmr,gmre,obj['SATS'],obj['PHOTPTYPE'],obj['SPEC_Z'],obj['REMOVE']
 #		print rmi,rmie
 		if gmre > 0.8 and rmie > 0.5:
 			print obj['SPEC_Z'],obj['RA'],obj['DEC'],obj['r']

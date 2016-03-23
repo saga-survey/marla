@@ -253,7 +253,6 @@ def fill_sats_array(sqltable):
 	# SATS = 3,FIND THE PRIMARY GALAXY
 	msk = sqltable['OBJ_NSAID'] == sqltable['HOST_NSAID']
 	sqltable['SATS'][msk] = 3
-	print a
 	return sqltable
 
 
@@ -320,7 +319,6 @@ def add_saga_spec(sagaspec,sqltable):
 	nmatch = np.size((d >= 0.0).nonzero())
 	print "adding existing SAGA SPECTRA = ",nmatch
 
-  # SET REMOVED FLAG TO 1
   	if (nmatch > 0):
 		sqltable['SPEC_Z'][id1]   = sagaspec['SPEC_Z'][id2]
 		sqltable['ZQUALITY'][id1] = sagaspec['ZQUALITY'][id2]
@@ -329,8 +327,6 @@ def add_saga_spec(sagaspec,sqltable):
 		sqltable['SPECOBJID'][id1]    = sagaspec['SPECOBJID'][id2]
 		sqltable['SPEC_REPEAT'][id1]  = sagaspec['SPEC_REPEAT'][id2]
 		sqltable['SATS'][id1]  = sagaspec['SATS'][id2]
-		sqltable['REMOVE'][id1]  = sagaspec['REMOVE'][id2]
-
 
 	return sqltable
 

@@ -144,6 +144,8 @@ def create_base_catalog(nsaid, host,nowise,noML):
             _filled_column('TELNAME', ' '*6, size), #SPECTRA
             _filled_column('MASKNAME', ' '*48, size),
             _filled_column('ZQUALITY', -1, size),
+            _filled_column('SPEC_CLASS_SGQ', ' '*2, size),
+            _filled_column('SPEC_CLASS_AE', ' '*2, size),
             _filled_column('SPECOBJID', ' '*48, size),
             _filled_column('SPEC_REPEAT', ' '*48, size)]
 
@@ -191,6 +193,12 @@ def create_base_catalog(nsaid, host,nowise,noML):
     rmv = REMOVELIST.load()
     sqltable = saga_tools.rm_removelist_obj(rmv, sqltable)
 
+
+    # ADD EXISTING SAGA SPECTRA TO FILE
+    sagaspec = SAGACAT.load()
+    sqltable = saga_tools.add_saga_spec(sagaspec,sqltable)
+
+
     # CLEAN AND DE-SHRED USING NSAID
     nsa = NSACAT.load()
     sqltable = saga_tools.nsa_cleanup(nsa, sqltable)
@@ -203,9 +211,10 @@ def create_base_catalog(nsaid, host,nowise,noML):
     sqltable = saga_tools.photoflags(addlst,sqltable)
  
 
-    # ADD EXISTING SAGA SPECTRA TO FILE
-    sagaspec = SAGACAT.load()
-    sqltable = saga_tools.add_saga_spec(sagaspec,sqltable)
+#    sqltable = saga_tools.fill_sats_array(sqltable)
+#    sqltable = saga_tools.repeat_sat_cleanup(sqltable)
+
+
 
     return sqltable
 
