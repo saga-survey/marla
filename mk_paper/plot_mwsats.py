@@ -39,20 +39,41 @@ def plot_mwsats():
 	file = SAGA_DIR +'/data/saga_spectra_dirty.fits.gz'
 	allspec = Table.read(file)
 
-	m = allspec['SATS'] == 1
-	sats = allspec[m]
+	m1 = allspec['SATS'] == 1
+	m2 = allspec['TELNAME'] != 'SDSS'
+	m3 = allspec['TELNAME'] != 'NSA'
+	m4 = allspec['TELNAME'] != 'GAMA'
+	sdss_sats = allspec[m1]
+
+	saga_sats = allspec[m1&m2&m3&m4]
 
    # MCCONNACHIE DATA
 	mcconndat = get_mcconn_table()
+
+	# CALCULATE NUMBER OF MW SATS
+	mcconndat.columns
+	mw = mcconndat['distance']<300
+	MV = mcconndat['Vmag'] - mcconndat['distmod'] - 0.3
+	msk = MV < -12.3
+	print "brighter than -12"
+	print mcconndat['name'][msk&mw],MV[msk&mw]
+
+	print "brighter than -10"
+	msk = MV < -10.5
+	print mcconndat['name'][msk&mw],MV[msk&mw]
+
 	sample = mcconndat['distance']<0
 	sample[mcconndat['name']=='LMC'] = True
 	sample[mcconndat['name']=='SMC'] = True
+	sample[mcconndat['name']=='Sagittarius'] = True
 	sample[mcconndat['name']=='Fornax'] = True
 	sample[mcconndat['name']=='Leo I'] = True
+	sample[mcconndat['name']=='Sculptor'] = True
+
 	ldat = mcconndat[sample]
 
 
-	sagadists = [5, 20, 30, 40] * u.Mpc
+	sagadists = [5, 20, 30, 42] * u.Mpc
 	distmods = 5*np.log10(sagadists/(10*u.pc))
 
 	data = ldat[ldat['Vabs']<-10]
@@ -61,15 +82,18 @@ def plot_mwsats():
 	fig = plt.figure(figsize=(7, 3))
 	fig.subplots_adjust(bottom=0.15, top=0.9,left=0.12, right=0.95, wspace=0.3)
 
+	cc = ['red','orange','green','blue','purple']
 
     # PLOT SIZES
 	plt.subplot(1,2,1)
-	for gal in data:
-		plt.plot(sagadists.value, ((gal['rh_phys']/sagadists.to(u.kpc).value)*u.rad).to(u.arcsec).value,'-o',label=gal['name'])
-	plt.plot(sats['HOST_DIST'],sats['PETRORAD_R'],'r.',label='SAGA sats')
+	plt.plot(sdss_sats['HOST_DIST'],sdss_sats['PETRORAD_R'],'.',color='grey',label='SDSS sats')
+	plt.plot(saga_sats['HOST_DIST'],saga_sats['PETRORAD_R'],'r.',label='SAGA sats')
+	for i,gal in enumerate(data):
+		plt.plot(sagadists.value, ((gal['rh_phys']/sagadists.to(u.kpc).value)*u.rad).to(u.arcsec).value,'-o',c=cc[i],label=gal['name'])
+
 
 	plt.ylim(0,20)
-	plt.xlim(15,42)
+	plt.xlim(15,45)
 	plt.xlabel('D [Mpc]')
 	plt.ylabel('Radius [arcsec]')
 
@@ -84,9 +108,12 @@ def plot_mwsats():
 	Vmr=0.3
 	rad = 3*u.arcsec/2. #3" diam = fibermag
 
-	cc = []
-	for _ in range(5):
-	    cc.extend(plt.rcParams['axes.color_cycle'])
+	  # PLOT SAGA DATA
+	plt.plot(sdss_sats['FIBERMAG_R'],sdss_sats['r'],'.',color='grey',label='SDSS sats')
+	plt.plot(saga_sats['FIBERMAG_R'],saga_sats['r'],'r.',label='SAGA sats')
+
+
+	cc = ['red','orange','green','blue','purple']
 
 	#first do plummer
 	for i, gal in enumerate(data):
@@ -100,8 +127,7 @@ def plot_mwsats():
 	#plt.legend(loc=0)
 
 
-	  # PLOT SAGA DATA
-	plt.plot(sats['FIBERMAG_R'],sats['r'],'r.',label='SAGA sats')
+
 
 	plt.legend(loc=2,fontsize=6)
 
@@ -124,7 +150,7 @@ def plot_mwsats():
 	plt.ylabel('r')
 	plt.title('Solid=Plummer, Dashed=Exponential')
 	plt.xlim(16,24) #tweak for text
-	plt.ylim(12,22)
+	plt.ylim(12,22.5)
 
 
 
@@ -144,7 +170,7 @@ def exp_prof(r, totflux=1, Reff=1):
     #the parenthetical below is non-trivial, but it's ~1.67835
     rs = Reff / -(lambertw(-1/2/np.exp(1),-1).real+1.)
     rs = Reff/1.67835
-    print rs
+#    print rs
     return totflux*np.exp(-r/rs)/np.pi/2./rs/rs
 
 
