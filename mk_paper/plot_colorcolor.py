@@ -35,6 +35,8 @@ SAGA_DIR   = os.environ['SAGA_DIR']
 def plot_colorcolor():
 
 
+# ADD MW SATELLITES?
+
 	# READ SPECTRA
 	file = SAGA_DIR +'/data/saga_spectra_dirty.fits.gz'
 	allspec = Table.read(file)
@@ -67,8 +69,8 @@ def plot_colorcolor():
 	fig.subplots_adjust(left=0.1, right=0.95, wspace=0.05,
                     bottom=0.1, top=0.95, hspace=0.05)
 
-	xl = [-1,2.5]
-	yl=[-1,2.5]
+	xl = [-1,2.]
+	yl=[-1,2.]
 
 	ax = fig.add_subplot(2, 2, 1)
 #	ax.plot(gr[gal&bmag], ri[gal&bmag],'k.',label = 'all objects')
