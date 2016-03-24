@@ -31,6 +31,16 @@ def calc_general():
 
 
 	# CALCULATE NUMBERS FOR MW SIM SECTION
+	r =21
+	d1 = 0.01*3e5/70.
+	d2 = 0.0045*3e5/70.
+	dmin  = 5*np.log10(20. *1e6) - 5. #Mpc
+	dmax  = 5*np.log10(45. *1e6) - 5.#Mpc
+
+	Mr_min = 21 - dmin
+	Mr_max = 21 - dmax
+	print "Min/max survey distance ", d1,d2
+	print "Min/max satellites detectable",Mr_min,Mr_max
 
 
 	# CALCULATE NUMBERS FOR SPECTRA SECTION
@@ -41,9 +51,7 @@ def calc_general():
 	good2 = allspec['REMOVE'] == -1
 	good = good1 & good2
 
-	all = mmt&aat&imacs&wiyn
-	print '\\newcommand{\\allspec}{'+str(np.sum(all&good))+" }"
-	print
+
 
 	# MMT
 	mmt = allspec['TELNAME'] == 'MMT'
@@ -61,6 +69,9 @@ def calc_general():
 	wiyn = allspec['TELNAME'] == 'WIYN'
 	print '\\newcommand{\\wiynspec}{'+str(np.sum(wiyn&good))+" }"
 
+	print
+	all = mmt&aat&imacs&wiyn
+	print '\\newcommand{\\allspec}{'+str(np.sum(all&good))+" }"
 
 
  
