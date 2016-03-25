@@ -30,7 +30,7 @@ def get_jpg(ra,dec,outname):
    # ULR REQUEST FOR SDSS IMAGE CUTOUT
         sdssurl = 'http://skyservice.pha.jhu.edu/DR10/ImgCutout/getjpeg.aspx?ra='+\
                                 str(ra)+'&dec='+str(dec)+\
-                                '&width=256&height=256&scale=0.4'#&opt=G'
+                                '&width=256&height=256&scale=0.2'#&opt=G'
 
         urllib.urlretrieve(sdssurl, outname)
         return sdssurl
