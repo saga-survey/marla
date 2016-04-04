@@ -16,7 +16,7 @@ import  PIL
 from PIL import Image
 
 import matplotlib.pyplot as plt
-
+import matplotlib.gridspec as gridspec
 
 from astropy import table
 from astropy.table import Table
@@ -96,10 +96,9 @@ def plot_spectra():
 	sats.sort('r')
 
 
-	fig = plt.figure(figsize=(5, 7))
-#	fig.subplots_adjust(left=0.1, right=0.95, wspace=0.05,
-#                    bottom=0.1, top=0.95, hspace=0.05)
 
+	fig = plt.figure(figsize=(6, 6)) 
+	gs = gridspec.GridSpec(nsats, 2, width_ratios=[1, 2]) 
 
 	i=0
 	for s in sats:
@@ -109,18 +108,34 @@ def plot_spectra():
 			wv, flux  = get_spec(s)
 
 
+			ax0 = plt.subplot(gs[0+i])
+			ax0.plot(wv, flux)
+			ax0.get_xaxis().set_visible(False)
+			ax0.get_yaxis().set_visible(False)
+			ax0.imshow(img)
+
+			ax1 = plt.subplot(gs[1+i])
+			ax1.plot(wv, flux)
+
 			# plot image
-			ax = fig.add_subplot(nsats, 2, i+1)
-			ax.get_xaxis().set_visible(False)
-			ax.get_yaxis().set_visible(False)
+			#gs = gridspec.GridSpec(1, 2, width_ratios=[1, 4]) 
+#			ax = fig.add_subplot(nsats, 2, i+1)
+#			ax = plt.subplots(gs[i,0])
+#			ax.get_xaxis().set_visible(False)
+#			ax.get_yaxis().set_visible(False)
+#			ax.imshow(img)
 
 			#plot spectrum
-			ax = fig.add_subplot(nsats, 2, i+2)
-			ax.plot(wv, flux,'.')
-			ax.title=t
+#			ax = plt.subplots(gs[i+1,1])
+
+#			ax = fig.add_subplot(nsats, 2, i+2)
+#			ax.plot(wv, flux)
+#			ax.title=t
+			print nsats,2,i+2
 
 			i=i+2
-
+#	plt.tight_layout
+	plt.show()
 	plt.savefig('fig_spectra.pdf')
 
 
