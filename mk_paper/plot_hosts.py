@@ -35,9 +35,12 @@ SAGA_DROPBOX= os.environ['SAGA_DROPBOX']
 def plot_hosts():
 
 
-	file = SAGA_DROPBOX + 'hosts/host_catalog_all.csv'
+	file = SAGA_DROPBOX + 'hosts/masterlist.csv'
 	all = ascii.read(file)
 	ri_all = all['r'] - all['i']
+	dmod  = 5*np.log10(1e6*all['distance']) - 5.
+	K_abs = all['K'] - dmod
+	r_abs = all['r'] - dmod
 
 	file = SAGA_DROPBOX + 'hosts/host_catalog_flag0.csv'
 	hosts = ascii.read(file)
@@ -46,10 +49,9 @@ def plot_hosts():
 	m = hosts['NSAID']  & 0
 	for n in names:
 		msaga = hosts['NSAID'] == n['NSA']
-		print np.sum(m)
 		m = np.logical_or(m, msaga)
 	print hosts['NSAID'][m]
-
+	print "number of blue hosts = ",np.sum(m)
 
 	ri = hosts['r'] - hosts['i']
 
@@ -62,7 +64,7 @@ def plot_hosts():
 
 	# first plot the flux distribution
 	ax = fig.add_subplot(121)
-	ax.plot(all['K_abs'],ri_all, 'k.')
+	ax.plot(K_abs,ri_all, '.',markersize=4,color='grey')
 	ax.plot(hosts['K_abs'],ri, 'bo')
 	ax.plot(hosts['K_abs'][m],ri[m], 'ro')
 
@@ -79,7 +81,7 @@ def plot_hosts():
 
 # second plot the flux distribution
 	ax = fig.add_subplot(122)
-	ax.plot(all['r_abs'],ri_all, 'k.',label='All Galaxies')
+	ax.plot(r_abs,ri_all, '.',color='grey',markersize=4,label='All Galaxies')
 	ax.plot(hosts['r_abs'],ri, 'bo',label='MW Hosts')
 	ax.plot(hosts['r_abs'][m],ri[m], 'ro',label='This Paper')
 
