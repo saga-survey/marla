@@ -85,6 +85,9 @@ def plot_hosts():
 	ax.plot(hosts['r_abs'],ri, 'bo',label='MW Hosts')
 	ax.plot(hosts['r_abs'][m],ri[m], 'ro',label='This Paper')
 
+
+# ERRORS = MR +/- 0.38
+# ri 0.29 +-/0.051
 	ax.plot([-20.2],[0.33],'y*',label='Milky Way',color='#ffcc11')
 	ax.plot([-20.2],[0.33],'y*',markersize=14,color='#ffcc11')
 
