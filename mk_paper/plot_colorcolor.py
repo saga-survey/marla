@@ -22,7 +22,7 @@ from astropy import units as u
 from astropy.io import ascii
 
 
-
+from astroML.plotting import scatter_contour
 from astroML.plotting import setup_text_plots
 setup_text_plots(fontsize=9, usetex=True)
 
@@ -64,61 +64,88 @@ def plot_colorcolor():
 	gal = allspec['PHOTPTYPE']  == 3
 	star = allspec['PHOTPTYPE'] == 6
 
+	xl = [-0.3,2.0]
+	yl=[-0.8,1.3]
+
+	xl1 = gr > xl[0]
+	xl2 = gr < xl[1]
+	yl1 = ri > yl[0]
+	yl2 = ri < yl[1]
+	lims = xl1&xl2&yl1&yl2
 
 	fig = plt.figure(figsize=(7, 7))
 	fig.subplots_adjust(left=0.1, right=0.95, wspace=0.05,
                     bottom=0.1, top=0.95, hspace=0.05)
 
-	xl = [-1,2.]
-	yl=[-1,2.]
 
+	thr = 60
+	##############################
 	ax = fig.add_subplot(2, 2, 1)
-#	ax.plot(gr[gal&bmag], ri[gal&bmag],'k.',label = 'all objects')
-	ax.hexbin(gr[gal&bmag], ri[gal&bmag],extent=[-3,2.5,-3.0,2.5],cmap='Greys',bins='log',label='all objects')
+	scatter_contour(gr[gal&bmag&lims], ri[gal&bmag&lims], threshold=thr, log_counts=True, ax=ax,
+                histogram2d_args=dict(bins=40),
+                plot_args=dict(marker=',', linestyle='none', color='black'),
+                contour_args=dict(cmap=plt.cm.bone))
 
 
 	ax.plot(gr[gal&bmag&msat], ri[gal&bmag&msat],'b.',label = 'low-z')
 	ax.plot(gr[gal&bmag&msat&mname], ri[gal&bmag&msat&mname],'r.',label='satellites')
 	ax.set_xlim(xl)
 	ax.set_ylim(yl)
-	ax.text(-0.75,2.25,'Bright Galaxies, r $<$ 17.7')
+	ax.text(xl[0]+0.02,yl[1]-0.2,'Bright Galaxies, r $<$ 17.7')
+	ax.get_xaxis().set_visible(False)
 	plt.axvline(0.8, c='k', ls=':')
 	plt.axhline(0.5, c='k', ls=':')
 	plt.legend(loc=4,fontsize=9)
 	ax.set_ylabel('(r-i)')
 
+	##############################
 	ax = fig.add_subplot(2, 2, 2)
-#	ax.plot(gr[gal&fmag], ri[gal&fmag],'k.')
-	ax.hexbin(gr[gal&fmag], ri[gal&fmag],extent=[-3,2.5,-3.0,2.5],cmap='Greys',bins='log')
+	scatter_contour(gr[gal&fmag&lims], ri[gal&fmag&lims], threshold=thr, log_counts=True, ax=ax,
+                histogram2d_args=dict(bins=40),
+                plot_args=dict(marker=',', linestyle='none', color='black'),
+                contour_args=dict(cmap=plt.cm.bone))
+
 	ax.plot(gr[gal&fmag&msat], ri[gal&fmag&msat],'b.')
 	ax.plot(gr[gal&fmag&msat&mname], ri[gal&fmag&msat&mname],'r.')
 	ax.set_xlim(xl)
 	ax.set_ylim(yl)
-	ax.text(-0.75,2.25,'Faint Galaxies, r $>$ 17.7')
+	ax.text(xl[0]+0.02,yl[1]-0.2,'Faint Galaxies, r $>$ 17.7')
+	ax.get_xaxis().set_visible(False)
+	ax.get_yaxis().set_visible(False)
 	plt.axvline(0.8, c='k', ls=':')
 	plt.axhline(0.5, c='k', ls=':')
 
+
+	##############################
 	ax = fig.add_subplot(2, 2, 3)
-	#ax.plot(gr[star&bmag], ri[star&bmag],'k.')
-	ax.hexbin(gr[star&bmag], ri[star&bmag],extent=[-3,2.5,-3.0,2.5],cmap='Greys',bins='log')
+	scatter_contour(gr[star&bmag&lims], ri[star&bmag&lims], threshold=thr, log_counts=True, ax=ax,
+                histogram2d_args=dict(bins=40),
+                plot_args=dict(marker=',', linestyle='none', color='black'),
+                contour_args=dict(cmap=plt.cm.bone))
+
 	ax.plot(gr[star&bmag&msat], ri[star&bmag&msat],'b.')
 	ax.plot(gr[star&bmag&msat&mname], ri[star&bmag&msat&mname],'r.')
 	ax.set_xlim(xl)
 	ax.set_ylim(yl)
-	ax.text(-0.75,2.25,'Bright Stars, r $<$ 17.7')
+	ax.text(xl[0]+0.03,yl[1]-0.2,'Bright Stars, r $<$ 17.7')
 	plt.axvline(0.8, c='k', ls=':')
 	plt.axhline(0.5, c='k', ls=':')
 	ax.set_xlabel('(g-r)')
 	ax.set_ylabel('(r-i)')
 
+	##############################
 	ax = fig.add_subplot(2, 2, 4)
-	#ax.plot(gr[star&fmag], ri[star&fmag],'k.')
-	ax.hexbin(gr[star&fmag], ri[star&fmag],extent=[-3,2.5,-3.0,2.5],cmap='Greys',bins='log')
+	scatter_contour(gr[star&fmag&lims], ri[star&fmag&lims], threshold=thr, log_counts=True, ax=ax,
+                histogram2d_args=dict(bins=40),
+                plot_args=dict(marker=',', linestyle='none', color='black'),
+                contour_args=dict(cmap=plt.cm.bone))
+
 	ax.plot(gr[star&fmag&msat], ri[star&fmag&msat],'b.')
 	ax.plot(gr[star&fmag&msat&mname], ri[star&fmag&msat&mname],'r.')
 	ax.set_xlim(xl)
 	ax.set_ylim(yl)
-	ax.text(-0.75,2.25,'Faint Stars, r $>$ 17.7')
+	ax.text(xl[0]+0.03,yl[1]-0.2,'Faint Stars, r $>$ 17.7')
+	ax.get_yaxis().set_visible(False)
 	plt.axvline(0.8, c='k', ls=':')
 	plt.axhline(0.5, c='k', ls=':')
 	ax.set_xlabel('(g-r)')
@@ -154,4 +181,8 @@ def plot_colorcolor():
 	star = lowz['PHOTPTYPE'] ==6
 	for obj in lowz[star]:
 		print obj['SPEC_Z'],obj['RA'],obj['DEC'],obj['TELNAME'],obj['HOST_NSAID'],obj['SATS'],obj['REMOVE']
+
+
+#	ax.hexbin(gr[gal&fmag], ri[gal&fmag],extent=[-3,2.5,-3.0,2.5],cmap='Greys',bins='log')
+
 
