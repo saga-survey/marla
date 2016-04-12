@@ -144,8 +144,8 @@ def create_base_catalog(nsaid, host,nowise,noML):
             _filled_column('TELNAME', ' '*6, size), #SPECTRA
             _filled_column('MASKNAME', ' '*48, size),
             _filled_column('ZQUALITY', -1, size),
-            _filled_column('SPEC_CLASS_SGQ', ' '*2, size),
-            _filled_column('SPEC_CLASS_AE', ' '*2, size),
+            _filled_column('SPEC_CLASS', ' '*2, size),
+            _filled_column('HI_FLUX', -1, size),
             _filled_column('SPECOBJID', ' '*48, size),
             _filled_column('SPEC_REPEAT', ' '*48, size)]
 
@@ -187,35 +187,38 @@ def create_base_catalog(nsaid, host,nowise,noML):
     # IF THIS IS A SAGA HOST, SET SAGA NAME
     names = SAGANAMES.load()
     sqltable['HOST_SAGA_NAME'] = saga_tools.saga_name(names,nsaid)
-    print sqltable['HOST_SAGA_NAME'][0]
+
+    # ADD EXISTING SAGA SPECTRA TO FILE
+    sagaspec = SAGACAT.load()
+    sqltable = saga_tools.add_saga_spec(sagaspec,sqltable)
 
     # SET REMOVE FLAGS
     rmv = REMOVELIST.load()
     sqltable = saga_tools.rm_removelist_obj(rmv, sqltable)
 
 
-    # ADD EXISTING SAGA SPECTRA TO FILE
-    sagaspec = SAGACAT.load()
-    sqltable = saga_tools.add_saga_spec(sagaspec,sqltable)
-
-
     # CLEAN AND DE-SHRED USING NSAID
     nsa = NSACAT.load()
+    print 'Cleaning on NSA catalog'
     sqltable = saga_tools.nsa_cleanup(nsa, sqltable)
 
+
     # CLEAN AND DE_SHRED HIGHER REDSHIFT OBJECTS
+    print 'Cleaning on SDSS catalog'
     sqltable = saga_tools.sdss_cleanup(sqltable)
+
 
     # REMOVE OBJECTS WITH BAD PHOTO-FLAGS, ADD OBJECTS BACK IN BY HAND
     addlst = ADDLIST.load()
+    print 'Cleaning on PhotoFlags'
     sqltable = saga_tools.photoflags(addlst,sqltable)
- 
+
 
 #    sqltable = saga_tools.fill_sats_array(sqltable)
 #    sqltable = saga_tools.repeat_sat_cleanup(sqltable)
 
 
-
+    print
     return sqltable
 
 
