@@ -59,12 +59,11 @@ def rm_removelist_obj(removelist,sagatable):
 		           1./3600,nnearest=1)
 
 	nmatch = np.size((d > 0.0).nonzero())
-	print "remove list objects = ",nmatch
 
   # SET REMOVED FLAG TO 1
   	if (nmatch > 0):
 		sagatable['REMOVE'][id1] = 1
-
+	print "Cleaning remove list objects = ",nmatch
 	return sagatable
 
 
@@ -171,7 +170,7 @@ def sdss_cleanup(sagatable):
 	s3 = sagatable['PETRORAD_R']/sagatable['PETRORADERR_R'] > 2.  # better than 50% error
 	s4 = sagatable['REMOVE'] == -1
 
-	smsk = s1&s2&s3#&s4
+	smsk = s1&s2&s3&s4
 	sdss_spec = sagatable[smsk]
 
 
@@ -189,14 +188,16 @@ def sdss_cleanup(sagatable):
 		robj = seps.to(u.arcsec).value
 
 		m1 = robj < reff   
-		if np.sum(m1) > 3:
-			print np.sum(m1),obj['RA'], obj['DEC'],obj['REMOVE']
+		if np.sum(m1) > 1:
 
-		# REMOVE SHREDDED OBJECTS NEAR SDSS SPECTRUM 
-		sagatable['REMOVE'][m1] = 4  
+			# REMOVE SHREDDED OBJECTS NEAR SDSS SPECTRUM 
+			sagatable['REMOVE'][m1] = 4  
 
-	# BUT KEEP ORIGINAL OBJECT
-	sagatable['REMOVE'][smsk] = -1
+			# BUT KEEP ORIGINAL OBJECT
+			m2 = robj < 1.0   
+			sagatable['REMOVE'][m2] = -1
+			if np.sum(m1) > 25:
+				print np.sum(m1),obj['RA'], obj['DEC']
 
 
 	return sagatable
@@ -233,7 +234,7 @@ def fill_sats_array(sqltable):
 	# SATS = 2, ALL LOW-Z (z < 0.05) GALAXIES
 	ncut = sqltable['MASKNAME'] != 'ned'  # NED LOWZ VELOCITIES HAVE PROBLEMS
 	lowz  = galcut & ncut &\
-		    (sqltable['SPEC_Z'] < 0.05)
+		    (sqltable['SPEC_Z'] < 0.03)
 	sqltable['SATS'][lowz] = 2
 
 
@@ -253,6 +254,8 @@ def fill_sats_array(sqltable):
 	# SATS = 3,FIND THE PRIMARY GALAXY
 	msk = sqltable['OBJ_NSAID'] == sqltable['HOST_NSAID']
 	sqltable['SATS'][msk] = 3
+
+
 	return sqltable
 
 
@@ -327,6 +330,8 @@ def add_saga_spec(sagaspec,sqltable):
 		sqltable['SPECOBJID'][id1]    = sagaspec['SPECOBJID'][id2]
 		sqltable['SPEC_REPEAT'][id1]  = sagaspec['SPEC_REPEAT'][id2]
 		sqltable['SATS'][id1]  = sagaspec['SATS'][id2]
+#		sqltable['REMOVE'][id1]  = sagaspec['REMOVE'][id2]
+
 
 	return sqltable
 
