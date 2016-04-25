@@ -32,7 +32,7 @@ SAGA_DROPBOX= os.environ['SAGA_DROPBOX']
 
 # GOOGLE DOCUMENTS URLs
 REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
-NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
+#NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_3.fits'))
 
 
 ############################################################################
@@ -124,15 +124,15 @@ def compile_saga_spectra(flagged_obs_hosts=False):
 
 
 	# HACK FOR THE MOMENT
-	m1=allspec['REMOVE'] == 3 
-	m2=allspec['SATS'] == 1
-	m=m1&m2
-	allspec['REMOVE'][m] = -1    # keep remove = 3 satelites
+#	m1=allspec['REMOVE'] == 3 
+#	m2=allspec['SATS'] == 1
+#	m=m1&m2
+#	allspec['REMOVE'][m] = -1    # keep remove = 3 satelites
 
-	m1=allspec['REMOVE'] == 2
-	m2=allspec['SATS'] == 1
-	m=m1&m2
-	allspec['SATS'][m] = -1     # remove remove=2 satellites
+#	m1=allspec['REMOVE'] == 2
+#	m2=allspec['SATS'] == 1
+#	m=m1&m2
+#	allspec['SATS'][m] = -1     # remove remove=2 satellites
 
 
 
