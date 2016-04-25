@@ -90,7 +90,7 @@ def run_casjob(query, outname):
 
     # IF FILE DOESN"T ALREADY EXIST, SUBMIT JOB TO CAS
     if not os.path.isfile(outfits+'.gz'):
-        job_id = cjob.submit(query, context='DR10')
+        job_id = cjob.submit(query, context='DR12')
         code = None
         while code != 5:
             time.sleep(60)
