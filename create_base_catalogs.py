@@ -21,6 +21,7 @@ from astropy.table import Table, Column
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 import saga_tools
+import fix_byhand
 
 import pyspherematch as sm
 from FileLoader import GoogleSheets, FitsTable
@@ -32,7 +33,7 @@ SAGA_DIR = os.getenv('SAGA_DIR', os.curdir)
 REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
 ADDLIST    = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 286645731, header_start=1)
 SAGANAMES  = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0, header_start=0)
-NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_2.fits'))
+NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_3.fits'))
 SAGACAT    = FitsTable(os.path.join(SAGA_DIR, 'data', 'saga_spectra_dirty.fits.gz'))
 
 
@@ -145,7 +146,6 @@ def create_base_catalog(nsaid, host,nowise,noML):
             _filled_column('MASKNAME', ' '*48, size),
             _filled_column('ZQUALITY', -1, size),
             _filled_column('SPEC_CLASS', ' '*2, size),
-            _filled_column('HI_FLUX', -1, size),
             _filled_column('SPECOBJID', ' '*48, size),
             _filled_column('SPEC_REPEAT', ' '*48, size)]
 
@@ -213,6 +213,8 @@ def create_base_catalog(nsaid, host,nowise,noML):
     print 'Cleaning on PhotoFlags'
     sqltable = saga_tools.photoflags(addlst,sqltable)
 
+    # FIX MAJOR PROBLEM SPECTRA BY HAND
+    sqltable = fix_byhand.fix_basecats(sqltable)
 
 #    sqltable = saga_tools.fill_sats_array(sqltable)
 #    sqltable = saga_tools.repeat_sat_cleanup(sqltable)
