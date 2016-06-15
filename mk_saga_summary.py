@@ -51,7 +51,9 @@ def mk_saga_summary():
 		print host[1], host[0]
 		msk1   = sagaspec['HOST_SAGA_NAME'] == host[1] 
 		msk2   = sagaspec['ZQUALITY'] >= 3
-		msk   = msk1 & msk2
+		msk3   = sagaspec['SATS'] != 3  # remove host
+
+		msk   = msk1 & msk2 & msk3
 		spec  = sagaspec[msk]
 		nsaid = sagaspec['HOST_NSAID'][msk][0]
 
@@ -59,7 +61,6 @@ def mk_saga_summary():
 		basefile  = os.path.join(SAGA_DIR, 'base_catalogs','base_sql_nsa{0}.fits.gz'.format(nsaid))
 		basetable = Table.read(basefile)	
 
-#		b_crap  = basetable['REMOVE'] != -1
 		b_rmv  = basetable['REMOVE'] == -1
 		b_rvir = basetable['RHOST_KPC'] <= 300
 		b_fib  = basetable['FIBERMAG_R'] <= 23
@@ -70,7 +71,6 @@ def mk_saga_summary():
 
 
 
-#		n_crap    =  np.sum(b_crap)  # all objects
 		nobj_all  =  np.sum(b_rmv)  # all objects
 		nobj_rvir =  np.sum(b_rmv & b_rvir)
 		nobj_gal  =  np.sum(b_rmv & b_rvir & b_gal &b_r21 & b_fib)
@@ -165,8 +165,6 @@ def sort_saga_hosts(sagaspec):
 	Find unique named SAGA hosts in allspec. 
 	Sort names by nsats
 	"""
-
-
 
 	# FIND UNIQUE SAGA NAMES and CALCULATE NSATS
 	unique_hosts = []
