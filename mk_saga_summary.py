@@ -45,7 +45,7 @@ def mk_saga_summary():
 	# FOR EACH HOST CALCULATE STUFF
 	data = []
 #	headers = ['SAGA Name', 'NSAID','RA','Dec','Nsats','MK','N_obj','gri (r<21)','gri (r< 20.5)','ML_{0.01,r< 21}','ML_{0.1,r< 21}']
-	headers = ['Name', 'NSAID','RA','Dec','Nsats','MK','N_obj','gri','ML_1e-5','ML_0.001','ML_0.01']
+	headers = ['Name', 'NSAID','RA','Dec','Nsats','N_corr','MK','N_obj','gri (r< 20.75)','ML_0.1']
 	for host in sorted_hosts:
 
 		print host[1], host[0]
@@ -56,33 +56,49 @@ def mk_saga_summary():
 		msk   = msk1 & msk2 & msk3
 		spec  = sagaspec[msk]
 		nsaid = sagaspec['HOST_NSAID'][msk][0]
+		dist = sagaspec['HOST_DIST'][msk][0]
+
 
 		# READ BASE CATALOG
 		basefile  = os.path.join(SAGA_DIR, 'base_catalogs','base_sql_nsa{0}.fits.gz'.format(nsaid))
 		basetable = Table.read(basefile)	
+
+
+
+
+
+		b_err1 = basetable['r_err'] < 10
+#		b_err2 = basetable['r'] > 18
+		b_rerr = b_err1 #& b_err2     #  this cut only below 18mag
+
 
 		b_rmv  = basetable['REMOVE'] == -1
 		b_rvir = basetable['RHOST_KPC'] <= 300
 		b_fib  = basetable['FIBERMAG_R'] <= 23
 		b_gal = basetable['PHOT_SG'] == 'GALAXY'
 
-		b_r21  = basetable['r'] <= 21.0
-		b_r205 = basetable['r'] <= 20.5
+		b_r21  = basetable['r'] - basetable['EXTINCTION_R'] <= 20.75
+		b_r205 = basetable['r'] - basetable['EXTINCTION_R'] <= 20.75
 
 
 
 		nobj_all  =  np.sum(b_rmv)  # all objects
-		nobj_rvir =  np.sum(b_rmv & b_rvir)
+		nobj_rvir =  np.sum(b_rmv & b_rvir & b_gal & b_fib)
 		nobj_gal  =  np.sum(b_rmv & b_rvir & b_gal &b_r21 & b_fib)
 		print nobj_all, nobj_rvir, nobj_gal
 
-		gri205  = gri_completeness(basetable[b_rmv & b_rvir & b_gal & b_r205 & b_fib],sagaspec[msk])
-		gri21   = gri_completeness(basetable[b_rmv & b_rvir & b_gal & b_r21 & b_fib],sagaspec[msk])
+		gri21   = gri_completeness(basetable[b_rmv &  b_rerr &b_rvir & b_gal & b_r21 & b_fib],sagaspec[msk])
 
-		ML00001 = ML_completeness(basetable[b_rmv & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.00001)
-		ML0001 = ML_completeness(basetable[b_rmv & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.0001)
-		ML001 = ML_completeness(basetable[b_rmv & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.001)
-		ML01 = ML_completeness(basetable[b_rmv & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.01)
+		ML0001 = ML_completeness(basetable[b_rmv & b_rerr & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.0001)
+		ML001 = ML_completeness(basetable[b_rmv & b_rerr & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.001)
+		ML01 = ML_completeness(basetable[b_rmv & b_rerr & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.01)
+		ML1 = ML_completeness(basetable[b_rmv & b_rerr & b_rvir & b_gal & b_r21 & b_fib], sagaspec[msk], 0.1)
+
+
+		# ALSO DETERMINE NUMBER OF SATELLITE PASSING CRITERIA
+		b_sats = basetable['SATS'] ==1
+		nsats_corrected = b_sats & b_rmv & b_rerr & b_rvir & b_gal & b_r21
+		ncorr = np.sum(nsats_corrected)
 
 
 
@@ -92,15 +108,16 @@ def mk_saga_summary():
 		row.append(sagaspec['HOST_RA'][msk][0])
 		row.append(sagaspec['HOST_DEC'][msk][0])
 		row.append(str(host[0]))
+		row.append(ncorr)
 		dmod =5*np.log10(sagaspec['HOST_DIST'][0]*1e6) - 5.
 		mk = sagaspec['HOST_MK'][msk][0] 
 		row.append(str('{:.1f}'.format(mk)))
+		row.append(str('{:.1f}'.format(mk)))
 		row.append(str(nobj_gal))
 		row.append(gri21)
-#		row.append(gri205)
 
-		row.append(ML00001)
-		row.append(ML001)
+
+#		row.append(ML001)
 		row.append(ML01)
 
 
@@ -123,11 +140,25 @@ def mk_saga_summary():
 
 def gri_completeness(base, spec):
 
-	gmr  = base['g'] - base['r'] - 2*base['g_err'] - 2*base['r_err']
-	rmi  = base['r'] - base['i'] - 2*base['r_err'] - 2*base['i_err']
 
-	msk1 = gmr < 0.8
-	msk2 = rmi < 0.5
+
+	gmag = base['g'] - base['EXTINCTION_G']
+	rmag = base['r'] - base['EXTINCTION_R']
+	imag = base['i'] - base['EXTINCTION_I']
+
+	gr = gmag - rmag
+	ri = rmag - imag
+
+	grerr = np.sqrt(base['g_err']**2 + base['r_err']**2)
+	rierr = np.sqrt(base['r_err']**2 + base['i_err']**2)
+
+
+	cgmr = gr - 2.*grerr
+	crmi = ri - 2.*rierr
+
+
+	msk1 = cgmr < 0.85
+	msk2 = crmi < 0.55
 	grimsk = msk1&msk2
 	ngri = np.sum(msk1&msk2)
 
@@ -176,11 +207,15 @@ def sort_saga_hosts(sagaspec):
 			# CALCULATE NSATS FOR GIVEN HOST
 			msk1 = sagaspec['HOST_SAGA_NAME'] == s['HOST_SAGA_NAME']
 			msk2 = sagaspec['SATS'] == 1
-			msk3 = sagaspec['REMOVE'] != 2
+			msk3 = sagaspec['REMOVE'] == -1
 			msk = msk1 & msk2 & msk3
  			n = np.sum(msk)
 
 			nsats.append([n,s['HOST_SAGA_NAME']])
+
+
+
+
 
 #			print  s['HOST_SAGA_NAME'],sagaspec['RA'][msk],sagaspec['DEC'][msk]
 
