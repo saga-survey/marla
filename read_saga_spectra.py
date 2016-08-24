@@ -20,12 +20,120 @@ import pyfits
 import os
 import glob
 import pyspherematch as sm
-
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 
 import pdb
 
 SAGA_DROPBOX= os.environ['SAGA_DROPBOX']
 SAGA_DIR = os.environ['SAGA_DIR']
+
+###################################################
+# COMBINE MULTIPLE SPECTRA OF INDIVIDUAL OBJECTS
+def spec_combine(spec):
+	
+	# FOR EACH SAGA MEASUREMENT
+	for obj in spec:
+
+		# WEIRD WAY TO FIND MATCHING OBJECTS... spherematch was given weird answers
+		diff_ra = np.abs(obj['RA']- spec['RA'])
+		diff_dec=np.abs(obj['DEC'] - spec['DEC'])
+		m1 = diff_ra < (2./3600.)
+		m2 = diff_dec < (2./3600.)
+		m = m1&m2
+
+
+		# IF THERE ARE MORE THAN ONE SPECTRA
+		if (np.sum(m)>1):
+
+			mspec = spec[m]
+			mz = spec['ZQUALITY'] > 2
+			mr = spec['RA'] != 0 
+
+			# ARE THERE ONE OR MORE GOOD SPECTRA?
+			mgood = mz & mr & m1 & m2
+			print np.sum(mgood)
+
+            # IF SO REPLACE NUMBERS INTO FILE
+			if np.sum(mgood) == 1:
+				spec['TELNAME'][m]  = spec['TELNAME'][mgood]
+				spec['MASKNAME'][m] = spec['MASKNAME'][mgood]
+				spec['ZQUALITY'][m] = spec['ZQUALITY'][mgood]
+				spec['SPEC_Z'][m]   = spec['SPEC_Z'][mgood]
+				spec['specobjid'][m]= spec['specobjid'][mgood]
+				spec['SPEC_REPEAT'][m]= spec['TELNAME'][mgood]
+                # AND SET ALL OTHER MEASUREMENTS TO ZERO
+				ra = spec['RA'][mgood]
+				spec['RA'][m] = 0
+				spec['RA'][mgood] = ra
+
+
+				
+
+	return spec
+
+def find_uniques(spec_data, remove_imacs=False, nearenough_sep=5*u.arcsec):
+	import collections
+
+	# MATCH ON COORDINATES    
+	scs = SkyCoord(spec_data['RA'], spec_data['DEC'], unit=u.deg)
+	idx1, idx2, sep2d, _ = scs.search_around_sky(scs, nearenough_sep)
+
+	# now contruct the groups from the pairs
+	grpdct = {}
+	grpi = 0
+	for i1, i2 in zip(idx1, idx2):
+	    if i1 in grpdct:
+	        if i2 in grpdct:
+	            # combine the two groups by assigning grp2 items to grp1
+
+	            # this block is by far the slowest part so if the data size grows it should be optimized
+	            grp1 = grpdct[i1]
+	            grp2 = grpdct[i2]
+	            if grp1 != grp2:
+	                to_set_to_1 = [i for i, grp in grpdct.iteritems() if grp==grp2]
+	                for i in to_set_to_1:
+	                    grpdct[i] = grp1
+	        else:
+	            #add i2 to the group i1 is already in
+	            grpdct[i2] = grpdct[i1]
+	    else:
+	        if i2 in grpdct:
+	            #add i1 to the group i2 is already in
+	            grpdct[i2] = grpdct[i1]
+	        else:
+	            # add them both to a new group
+	            grpdct[i1] = grpdct[i2] = grpi
+	            grpi += 1
+	        
+	grpnum_to_group_members = collections.defaultdict(list)
+	for k, v in grpdct.iteritems():
+	    grpnum_to_group_members[v].append(k)
+	# convert the members into arrays
+	grpnum_to_group_members = {k:np.array(v) for k, v in grpnum_to_group_members.iteritems()}
+
+	# identify which is the "best" spectrum (meaning the first zq=4 spectrum)
+	idxs_to_keep = []
+	new_repeats = []
+	for grpnum, allmembers in grpnum_to_group_members.iteritems():
+	    if remove_imacs:
+	        members =  allmembers[spec_data['TELNAME'][allmembers]!='IMACS']
+	        if len(members)==0:
+	            continue
+	    else:
+	        members = allmembers
+	        
+	    idxs_to_keep.append(members[np.argsort(spec_data['ZQUALITY'][members])[-1]])
+	    new_repeats.append('+'.join(np.unique(spec_data['SPEC_REPEAT'][members])))
+
+	# now build the output table from the input
+	unique_objs = spec_data[np.array(idxs_to_keep)]
+	del unique_objs['SPEC_REPEAT']
+	unique_objs['SPEC_REPEAT'] = new_repeats
+
+	return unique_objs
+
+
 
 
 ############################################################################
@@ -50,6 +158,11 @@ def read_gama():
 	spec_repeat = ['GAMA' for i in one]
 	gama_specobjid = gama['SPECID']
 	gamaname = gama['CATAID'].astype('S80')
+
+	# GAMA GOES UP TO 5, set these to 4 to avoid confusion
+	m = gama['nq'] == 5
+	gama['nq'][m] = 4
+
 
 
   # CREATE GAMA SPEC TABLE
@@ -144,6 +257,49 @@ def read_aat():
 		n=n+1
 	print "Number of AAT Files = ",n	
 	return aat_table
+
+
+############################################################################
+# READ AAT MZ CATALOGS
+def read_aat_mz():
+
+	aat_path  = SAGA_DROPBOX + '/Spectra/Final/AAT/'
+	aat_files = glob.glob(aat_path+'*mz')
+
+	n=0
+	for afile in aat_files:	
+
+		# ACCEPT ALL GOOD SPECTRA
+		adata = ascii.read(afile)
+		msk = adata.field('col14') >= 1  # ONLY OBJECTS WITH QUALITY GE 1
+		mz = adata[msk]
+
+		# PLACE HOLDER ARRAYS	
+		one = np.ones(len(mz))
+		telname = ['AAT' for i in one]
+		spec_repeat = ['AAT' for i in one]
+		maskid = [afile for i in one]
+		maskid = [x.split(SAGA_DROPBOX,1)[1] for x in maskid]
+
+		# RA/DEC COMES IN RADIANS!
+		ra  = mz['col3']*180/np.pi
+		dec = mz['col4']*180/np.pi
+
+
+	   # CREATE MMT SPEC TABLE
+		mz_table1 = table.table.Table([ra, dec, maskid, mz['col1'],\
+									    mz['col13'], mz['col14'], telname,spec_repeat],\
+			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
+			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+
+
+	   # CREATE OR APPEND TO AAT TABLE	
+		if (n==0):  aat_table = mz_table1
+		if (n > 0): aat_table = table.vstack([aat_table,mz_table1])
+		n=n+1
+	print "Number of AAT MZ Files = ",n	
+	return aat_table
+
 
 
 ############################################################################
@@ -259,13 +415,13 @@ def read_deimos():
 
 # CREATE DEIMOS SPEC TABL
 	#  [ ODYSSEY, ODSSEY-Pen]
-	ra   = [247.825839103498]
-	dec  = [20.210825313885]
-	mask = ['deimos2014']
-	sid  = [0]
-	v    = [2375/3e5]
-	zq   = [4]
-	tel  = ['DEIMOS']
+	ra   = [247.825839103498, 221.86742, 150.12470]
+	dec  = [20.210825313885, -0.28144459, 32.561687]
+	mask = ['deimos2014', 'deimos2016-DN1','deimos2016-MD1']
+	sid  = [0,0,0]
+	v    = [2375/3e5,0.056,1.08]
+	zq   = [4,4,4]
+	tel  = ['DEIMOS','DEIMOS','DEIMOS']
 
 
 	deimos_table = table.table.Table([ra, dec, mask, sid,\
