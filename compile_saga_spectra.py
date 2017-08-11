@@ -50,18 +50,25 @@ def compile_saga_spectra(flagged_obs_hosts=False):
 	gama_table   = read_saga_spectra.read_gama()
 	mmt_table    = read_saga_spectra.read_mmt()
 	aat_table    = read_saga_spectra.read_aat()
+	aat_table_mz = read_saga_spectra.read_aat_mz()
 	imacs_table  = read_saga_spectra.read_imacs()
 	wiyn_table   = read_saga_spectra.read_wiyn()
 	deimos_table = read_saga_spectra.read_deimos()
 
+
 	# LEAST TO MOST IMPORTANT
-	sagaspec = table.vstack([wiyn_table,imacs_table,gama_table,deimos_table,aat_table,mmt_table],\
+	sagaspec = table.vstack([wiyn_table,imacs_table,gama_table,deimos_table,aat_table,mmt_table,aat_table_mz],\
 						     metadata_conflicts='silent')
 
+	# WRITE FILE WITH ALL SPECTRA
+	file  = os.path.join(SAGA_DIR, 'data', 'saga_spectra_raw.fits.gz')	
+	write_fits(sagaspec,file)
 
-#	zq = sagaspec['ZQUALITY'] > 2
-	# need to write script to resolve repeats properly
-#	sagaspec=sagaspec[zq]
+	# COMBINE MULTIPLE SPECTRA
+#	read_saga_spectra.spec_combine(sagaspec)
+	spec = sagaspec
+	sagaspec = read_saga_spectra.find_uniques(spec)
+
 
 
  # FOR EACH FLAG ZERO HOST OR NON-FLAG ZERO OBSERVED HOST
@@ -92,18 +99,23 @@ def compile_saga_spectra(flagged_obs_hosts=False):
 			hostspec     = table.vstack([sdss_table,sagaspec[host_spec_objs]])
 
 
-		   # MATCH ALL SPECTRA TO BASECATALOG, ADD SPEC DETAILS
-			id2,id1,d = sm.spherematch(hostspec['RA'], hostspec['DEC'],basetable['RA'], basetable['DEC'],3./3600,nnearest=1)
+
+			tmp = hostspec
+			hostspec = read_saga_spectra.find_uniques(tmp)
+
+			id2,id1,d = sm.spherematch(hostspec['RA'],hostspec['DEC'],basetable['RA'], basetable['DEC'],3./3600,nnearest=1)
 			basetable['TELNAME'][id1]    = hostspec['TELNAME'][id2]
 			basetable['MASKNAME'][id1]   = hostspec['MASKNAME'][id2]
 			basetable['ZQUALITY'][id1]   = hostspec['ZQUALITY'][id2]
 			basetable['SPEC_Z'][id1]     = hostspec['SPEC_Z'][id2]
+			basetable['SPEC_Z_ERR'][id1]     = hostspec['SPEC_Z_ERR'][id2]
 			basetable['SPECOBJID'][id1]  = hostspec['specobjid'][id2]
-			basetable['SPEC_REPEAT'][id1]  = hostspec['TELNAME'][id2]
-
+			basetable['SPEC_REPEAT'][id1]= hostspec['SPEC_REPEAT'][id2]
 
 			m = basetable['SPEC_Z'] != -1
 
+			m2=basetable['TELNAME'][m] == ''
+			print 'number with telname = ',np.sum(m2)
 
 	      # COMBINE INTO SINGLE ALLSPEC FILE
 			if (nhost == 0):
@@ -122,20 +134,6 @@ def compile_saga_spectra(flagged_obs_hosts=False):
 	allspec = saga_tools.repeat_sat_cleanup(allspec)
 
 
-
-	# HACK FOR THE MOMENT
-#	m1=allspec['REMOVE'] == 3 
-#	m2=allspec['SATS'] == 1
-#	m=m1&m2
-#	allspec['REMOVE'][m] = -1    # keep remove = 3 satelites
-
-#	m1=allspec['REMOVE'] == 2
-#	m2=allspec['SATS'] == 1
-#	m=m1&m2
-#	allspec['SATS'][m] = -1     # remove remove=2 satellites
-
-
-
 	# WRITE ALL SPECTRA TAKEN
 	file  = os.path.join(SAGA_DIR, 'data', 'saga_spectra_dirty.fits.gz')
 	write_fits(allspec, file)
@@ -148,10 +146,15 @@ def compile_saga_spectra(flagged_obs_hosts=False):
 	galonly = allspec['PHOTPTYPE'] == 3
 	clean   = zql & rml & galonly
 	allclean = allspec[clean]
-
-
 	file  = os.path.join(SAGA_DIR, 'data', 'saga_spectra_clean.fits.gz')	
 	write_fits(allclean,file)
+
+
+	# WRITE TEXT FILE OF SATELLITES WHICH CAN BE EDITED
+#	file  = os.path.join(SAGA_DIR, 'data', 'saga_satellites.dat')	
+#	allsats = allclean['SATS' == 1]
+#	write_satellite_file(allsats,file)
+
 
 	return allspec 
 
