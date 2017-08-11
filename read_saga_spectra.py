@@ -158,6 +158,7 @@ def read_gama():
 	spec_repeat = ['GAMA' for i in one]
 	gama_specobjid = gama['SPECID']
 	gamaname = gama['CATAID'].astype('S80')
+	gamaerr = one*60.
 
 	# GAMA GOES UP TO 5, set these to 4 to avoid confusion
 	m = gama['nq'] == 5
@@ -167,9 +168,9 @@ def read_gama():
 
   # CREATE GAMA SPEC TABLE
 	gama_table = table.table.Table([gama['RA'], gama['DEC'],gamaname,one,\
-								    gama['z'],gama['nq'],telname,spec_repeat], \
+								    gama['z'],gamaerr,gama['nq'],telname,spec_repeat], \
 	     				            names=('RA', 'DEC', 'MASKNAME','specobjid',\
- 		                            'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+ 		                            'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 
 	print "GAMA SPECTRA = ",gama.size
 	return gama_table
@@ -188,7 +189,7 @@ def read_mmt():
 
 		# ACCEPT ALL GOOD SPECTRA
 		print mfile
-		mdata = ascii.read(mfile,guess=False,format='no_header', delimiter=' ',names=['col1','ra','dec','mag','z','col6','zq','col8','col9','col10','col11'])
+		mdata = ascii.read(mfile,guess=False,format='no_header', delimiter=' ',names=['col1','ra','dec','mag','z','zerr','zq','col8','col9','col10','col11'])
 
 
 		zq  = mdata.field('zq') >= 1 
@@ -208,9 +209,9 @@ def read_mmt():
 
 	   # CREATE MMT SPEC TABLE
 		mmt_table1 = table.table.Table([15.*mmt['ra'], mmt['dec'], maskid, mmt['col8'],\
-									    mmt['z'], mmt['zq'], telname,spec_repeat], \
+									    mmt['z'],mmt['zerr'], mmt['zq'], telname,spec_repeat], \
 			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
-			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+			     		                       'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 
 	   # CREATE OR APPEND TO MMT TABLE	
 		if (n==0):  mmt_table = mmt_table1
@@ -242,13 +243,13 @@ def read_aat():
 		spec_repeat = ['AAT' for i in one]
 		maskid = [afile for i in one]
 		maskid = [x.split(SAGA_DROPBOX,1)[1] for x in maskid]
-
+		aaterr = one*10.
 
 	   # CREATE MMT SPEC TABLE
 		aat_table1 = table.table.Table([aat['col2'], aat['col3'], maskid, aat['col8'],\
-									    aat['col5'], aat['col7'], telname,spec_repeat], \
+									    aat['col5'], aaterr, aat['col7'], telname,spec_repeat], \
 			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
-			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+			     		                       'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 
 
 	   # CREATE OR APPEND TO AAT TABLE	
@@ -280,6 +281,7 @@ def read_aat_mz():
 		spec_repeat = ['AAT' for i in one]
 		maskid = [afile for i in one]
 		maskid = [x.split(SAGA_DROPBOX,1)[1] for x in maskid]
+		mzerr = one*10
 
 		# RA/DEC COMES IN RADIANS!
 		ra  = mz['col3']*180/np.pi
@@ -288,9 +290,9 @@ def read_aat_mz():
 
 	   # CREATE MMT SPEC TABLE
 		mz_table1 = table.table.Table([ra, dec, maskid, mz['col1'],\
-									    mz['col13'], mz['col14'], telname,spec_repeat],\
+									    mz['col13'], mzerr,mz['col14'], telname,spec_repeat],\
 			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
-			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+			     		                       'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 
 
 	   # CREATE OR APPEND TO AAT TABLE	
@@ -315,9 +317,9 @@ def read_imacs():
 	for ifile in imacs_files:	
 
 		# ACCEPT ALL GOOD SPECTRA
-		idata = ascii.read(ifile,guess=False,format='no_header', delimiter=' ',names=['specid','ra','dec','col4','z','col6','zq','col8','col9','col10','slitid','col12'])
+		idata = ascii.read(ifile,guess=False,format='no_header', delimiter=' ',names=['specid','ra','dec','col4','z','zerr','zq','col8','col9','col10','slitid','col12'])
 		msk   = idata.field('zq') >= 1  
-
+		print idata.field('zq')
 		imacs = idata[msk]
 
 		# PLACE HOLDER ARRAYS	
@@ -330,9 +332,9 @@ def read_imacs():
 
 	   # CREATE MMT SPEC TABLE
 		imacs_table1 = table.table.Table([imacs['ra'], imacs['dec'], imacs['slitid'],imacs['col8'],\
-									    imacs['z'], imacs['zq'], telname,spec_repeat], \
+									    imacs['z'], imacs['zerr'],imacs['zq'], telname,spec_repeat], \
 			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
-			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+			     		                       'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 
 
 	   # CREATE OR APPEND TO imacs TABLE	
@@ -379,9 +381,9 @@ def read_wiyn():
 
 	   # CREATE WIYN SPEC TABLE		
 		wiyn_table1 = table.table.Table([c.ra.deg, c.dec.deg, maskid, wiyn['FID'],\
-									    wiyn['Z'], wiyn['ZQUALITY'], telname,spec_repeat], \
+									    wiyn['Z'], wiyn['Z_ERR'],wiyn['ZQUALITY'], telname,spec_repeat], \
 			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
-			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+			     		                       'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 
 
 	   # CREATE OR APPEND TO AAT TABLE	
@@ -402,9 +404,9 @@ def read_sdss(base):
 
   # CREATE GAMA SPEC TABLE
 	sdss_table = table.table.Table([sdss['RA'], sdss['DEC'],sdss['MASKNAME'],sdss['OBJID'],\
-								    sdss['SPEC_Z'],sdss['ZQUALITY'],sdss['TELNAME'],sdss['SPEC_REPEAT']], \
+								    sdss['SPEC_Z'],sdss['SPEC_Z_ERR'],sdss['ZQUALITY'],sdss['TELNAME'],sdss['SPEC_REPEAT']], \
 	     				            names=('RA', 'DEC', 'MASKNAME','specobjid',\
- 		                            'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+ 		                            'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 
 	return sdss_table
 
@@ -420,14 +422,16 @@ def read_deimos():
 	mask = ['deimos2014', 'deimos2016-DN1','deimos2016-MD1']
 	sid  = [0,0,0]
 	v    = [2375/3e5,0.056,1.08]
+	v_err = [0.001,0.001,0.001]
+
 	zq   = [4,4,4]
 	tel  = ['DEIMOS','DEIMOS','DEIMOS']
 
 
 	deimos_table = table.table.Table([ra, dec, mask, sid,\
-									    v, zq, tel, tel], \
+									    v, v_err,zq, tel, tel], \
 			     				        names=('RA', 'DEC', 'MASKNAME','specobjid',\
-			     		                       'SPEC_Z','ZQUALITY','TELNAME','SPEC_REPEAT'))
+			     		                       'SPEC_Z','SPEC_Z_ERR','ZQUALITY','TELNAME','SPEC_REPEAT'))
 	return deimos_table
 
 
