@@ -18,8 +18,10 @@ __all__ = ['run_hostlist','create_base_catalog']
 import os
 import numpy as np
 from astropy.table import Table, Column
+from astropy.io import ascii
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+
 import saga_tools
 import fix_byhand
 
@@ -28,17 +30,22 @@ from FileLoader import GoogleSheets, FitsTable
 
 
 # SET-UP DIRECTORIES AND FILES TO BE LOADED
-SAGA_DIR = os.getenv('SAGA_DIR', os.curdir)
+#SAGA_DIR    = os.getenv('SAGA_DIR', os.curdir)
+SAGA_DIR     = os.environ['SAGA_DIR']
+SAGA_DROPBOX = os.environ['SAGA_DROPBOX']
 
 REMOVELIST = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 1379081675, header_start=1)
 ADDLIST    = GoogleSheets('1Y3nO7VyU4jDiBPawCs8wJQt2s_PIAKRj-HSrmcWeQZo', 286645731, header_start=1)
 SAGANAMES  = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0, header_start=0)
 NSACAT     = FitsTable(os.path.join(SAGA_DIR, 'cats', 'nsa_v0_1_3.fits'))
 SAGACAT    = FitsTable(os.path.join(SAGA_DIR, 'data', 'saga_spectra_dirty.fits.gz'))
+CLEAN      =  FitsTable(os.path.join(SAGA_DIR, 'data', 'saga_spectra_clean.fits.gz'))
 
+MLFILE = '/Users/marlageha/Dropbox/SAGA/data/SAGA.objid.noclean.PROBS_WISE_PROBS.sept28.fits.gz'
+ML = Table.read(MLFILE)
 
 ##################################  
-def run_hostlist(nowise=False,noML=False,flagged_obs_hosts=False):
+def run_hostlist(nowise=False,noML=False,nosaga=False,flagged_obs_hosts=False):
     """
     For each host in hostlist, create base catalog
     default is to read offline Lang WISE catalogs
@@ -49,23 +56,26 @@ def run_hostlist(nowise=False,noML=False,flagged_obs_hosts=False):
     """
 
     # RUN EITHER FULL HOST LIST OR JSUT FLAG ZERO HOSTS, default to flag zero
-    if flagged_obs_hosts:
-        sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
-    else:
-        sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+    sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+    flag0data = sheet.load()
 
-    hostdata = sheet.load()
+    file      = SAGA_DROPBOX + '/hosts/submaster_all.ecsv.gz'
+    submaster = ascii.read(file, format='ecsv')
+
+##    print googleflag0.columns
+    flag0 = np.in1d(submaster['NSAID'],flag0data['NSAID'])
+    hostdata = submaster[flag0]
 
     # FOR EACH HOST, READ SQL AND CREATE BASE CATALOGS
     for host in hostdata:
         nid = host['NSAID']
-        catalog = create_base_catalog(nid, host,nowise,noML)
+        catalog = create_base_catalog(nid, host,nowise,noML,nosaga)
         write_base_fits(nid, catalog)
 
 
 
 ##################################  
-def run_single_host(nid,nowise=False,noML=False):
+def run_single_host(nid,nowise=False,noML=False,nosaga=False):
     """
     Run base catalog for single host
 
@@ -76,22 +86,61 @@ def run_single_host(nid,nowise=False,noML=False):
     nowise : bool, optional.  Turn off WISE catalog read
     """
 
-    sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
-#    sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
-    hostdata = sheet.load()
+#    sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+#    hostdata = sheet.load()
+
+    file      = SAGA_DROPBOX + '/hosts/submaster_all.ecsv.gz'
+    hostdata = ascii.read(file, format='ecsv')
 
 
     msk = hostdata['NSAID'] == nid
     if np.sum(msk) == 0:
+
         print 'NO HOST FOUND'
+        catalog = create_base_catalog(nid, hostdata[0],nowise,noML,nosaga)
+        write_base_fits(nid, catalog)
     else:
-        catalog = create_base_catalog(nid, hostdata[msk],nowise,noML)
+        catalog = create_base_catalog(nid, hostdata[msk],nowise,noML,nosaga)
         write_base_fits(nid, catalog)
 
 
 
+##################################  
+def run_named_hosts(nowise=False,noML=False,nosaga=False):
+    """
+    Run base catalog for SAGA named_hosts host
+
+    ACCEPTS ONLY FLAG_ZERO HOSTS FOR MOMENT!
+
+    Parameters
+    ----------
+    nowise : bool, optional.  Turn off WISE catalog read
+    """
+
+#    sheet = GoogleSheets('1b3k2eyFjHFDtmHce1xi6JKuj3ATOWYduTBFftx5oPp8', 448084634)
+#    hostdata = sheet.load()
+
+    file      = SAGA_DROPBOX + '/hosts/submaster_all.ecsv.gz'
+    hostdata = ascii.read(file, format='ecsv')
+
+    sheet = GoogleSheets('1GJYuhqfKeuJr-IyyGF_NDLb_ezL6zBiX2aeZFHHPr_s', 0)
+    named_hosts = sheet.load()
+
+
+    for sagahost in named_hosts:
+        nid = sagahost['NSA']
+        msk = hostdata['NSAID'] == nid
+        if np.sum(msk) == 0:
+            print nid#,sagahost['SAGA Name']
+            print 'NO HOST FOUND'
+            print
+        else:
+            catalog = create_base_catalog(nid, hostdata[msk],nowise,noML,nosaga)
+            write_base_fits(nid, catalog)
+
+
 ##################################
-def create_base_catalog(nsaid, host,nowise,noML):
+def create_base_catalog(nsaid, host,nowise,noML,nosaga):
     """
     Create single base catalog from SQL request
     with value-added quantities    
@@ -106,14 +155,17 @@ def create_base_catalog(nsaid, host,nowise,noML):
     hostdec  = host['Dec']       #DEC
     hostdist = host['distance']  #DISTANCE
     hostv    = host['vhelio']    #VHELIO
-    hostMK   = host['K']  - (5*np.log10(hostdist*1e6) - 5.)
-    hostflag = host['flag']      #HOST FLAG
+    hostMK   = host['M_K'] 
+    hostMr   = host['M_r'] 
+    hostMg   = host['M_g'] 
+
+#    hostflag = host['flag']      #HOST FLAG
 
 
 
     # CALCULATE OBJECT DISTANCE FROM HOST
     catsc = SkyCoord(u.Quantity(sqltable['RA'], u.deg), u.Quantity(sqltable['DEC'], u.deg))
-    hostcoords = SkyCoord(hostra*u.deg, hostdec*u.deg)
+    hostcoords = SkyCoord(hostra, hostdec,unit='deg')
     seps = catsc.separation(hostcoords)
 
     rhost_arcm = seps.to(u.arcmin).value
@@ -132,9 +184,11 @@ def create_base_catalog(nsaid, host,nowise,noML):
             _filled_column('HOST_DIST', hostdist, size),
             _filled_column('HOST_VHOST', hostv, size),
             _filled_column('HOST_MK', hostMK, size),
+            _filled_column('HOST_MR', hostMr, size),
+            _filled_column('HOST_MG', hostMg, size),
             _filled_column('HOST_NSAID', nsaid, size),
-            _filled_column('HOST_FLAG', hostflag, size),
             _filled_column('HOST_SAGA_NAME', ' '*48, size),
+            _filled_column('HOST_NGC_NAME', ' '*48, size),
             Column(rhost_arcm, 'RHOST_ARCM'), #OBJECT
             Column(rhost_kpc, 'RHOST_KPC'),
             _filled_column('OBJ_NSAID', -1, size),
@@ -146,8 +200,12 @@ def create_base_catalog(nsaid, host,nowise,noML):
             _filled_column('MASKNAME', ' '*48, size),
             _filled_column('ZQUALITY', -1, size),
             _filled_column('SPEC_CLASS', ' '*2, size),
-            _filled_column('SPECOBJID', ' '*48, size),
-            _filled_column('SPEC_REPEAT', ' '*48, size)]
+            _filled_column('SPECOBJID', ' '*48L, size),
+            _filled_column('SPEC_REPEAT', ' '*48, size),
+            _filled_column('SPEC_SN', -99., size),
+            _filled_column('SPEC_HA_EW', -99., size),
+            _filled_column('SPEC_HA_EWERR', -99., size)]
+
 
     sqltable.add_columns(cols)
     del cols
@@ -155,42 +213,61 @@ def create_base_catalog(nsaid, host,nowise,noML):
 
     # ADD WISE NUMBERS
     if not nowise:
-        wbasefile = os.path.join(SAGA_DIR, 'base_catalogs_nw', 'base_sql_nsa{0}_nw1.fits.gz'.format(nsaid))
-        wbasetable = FitsTable(wbasefile).load()
-        id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], wbasetable['RA'], wbasetable['DEC'], 1./3600)
+        wbasefile = os.path.join(SAGA_DIR, 'unwise', 'unwise_{0}.fits.gz'.format(nsaid))
         print 'Read WISE catalog: ', wbasefile
-        sqltable['W1'][id1]    = wbasetable['W1'][id2]
-        sqltable['W1ERR'][id1] = wbasetable['W1ERR'][id2]
-        sqltable['W2'][id1]    = wbasetable['W2'][id2]
-        sqltable['W2ERR'][id1] = wbasetable['W2ERR'][id2]
+
+        wbasetable = FitsTable(wbasefile).load()
+        wbasetable['W1_MAG'][np.isnan(wbasetable['W1_MAG'])]=-1
+        wbasetable['W1_MAG_ERR'][np.isnan(wbasetable['W1_MAG_ERR'])]=-1
+        wbasetable['W2_MAG'][np.isnan(wbasetable['W2_MAG'])]=-1
+        wbasetable['W2_MAG_ERR'][np.isnan(wbasetable['W2_MAG_ERR'])]=-1
+        id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], wbasetable['RA'], wbasetable['DEC'], 1./3600)
+        sqltable['W1'][id1]    = wbasetable['W1_MAG'][id2]
+        sqltable['W1ERR'][id1] = wbasetable['W1_MAG_ERR'][id2]
+        sqltable['W2'][id1]    = wbasetable['W2_MAG'][id2]
+        sqltable['W2ERR'][id1] = wbasetable['W2_MAG_ERR'][id2]
 
 
-    # ADD ML PREDICTIONS
+
+    # ADD ML PREDICTIONS USING OLD FILE
     if not noML:
-        MLbasefile = os.path.join(SAGA_DIR, 'base_catalogs_ML', 'base_sql_nsa{0}.fits.ext.fits.SAGA.predictions.fits.gz'.format(nsaid))
-        MLbasetable = FitsTable(MLbasefile).load()
-        id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], MLbasetable['RA'], MLbasetable['DEC'], 1./3600)
-        print 'Read ML catalog: ', MLbasefile
-        sqltable['PROBABILITY_CLASS1'][id1]    = MLbasetable['PROBABILITY_CLASS1'][id2]
-        sqltable['RESCALED_PROBABILITY_CLASS1'][id1]    = MLbasetable['RESCALED_PROBABILITY_CLASS1'][id2]
+        id1, id2, d = sm.spherematch(sqltable['RA'], sqltable['DEC'], ML['RA'], ML['DEC'], 1./3600)
+        sqltable['PROBABILITY_CLASS1'][id1]    = ML['PROBABILITY_CLASS_1'][id2]
 
 
 
 
-    # INITALIZE SDSS SPECTRAL ENTRIE
-    msk = (sqltable['SPEC_Z'] != -1) & (sqltable['SPEC_Z_WARN'] == 0)
+
+    # INITALIZE SDSS SPECTRAL ENTRIES
+    msk = sqltable['SPEC_Z'] != -1
     sqltable['TELNAME'][msk] = 'SDSS'
     sqltable['MASKNAME'][msk] = 'SDSS'
     sqltable['SPEC_REPEAT'][msk] = 'SDSS'
     sqltable['ZQUALITY'][msk] = 4
 
+    # SET BAD SDSSS SPECTROSCOPY TO ZQ = -1
+    # THERE ARE A FEW RECOVERABLE SPECTRA WITH SPEC_Z_WARN = 4, 
+    # BUT WILL NOT RECOVER THEM HERE
+    msk_badsdss = sqltable['SPEC_Z_WARN'] != 0
+    sqltable['ZQUALITY'][msk & msk_badsdss] = 1
+
+
     # IF THIS IS A SAGA HOST, SET SAGA NAME
     names = SAGANAMES.load()
-    sqltable['HOST_SAGA_NAME'] = saga_tools.saga_name(names,nsaid)
+    sname = ''
+    ngc   = '' 
+    if nsaid in names['NSA']: 
+        msk = names['NSA'] == nsaid
+        sname = names['SAGA'][msk]
+        ngc = names['NGC'][msk]
+    sqltable['HOST_SAGA_NAME'] = sname
+    sqltable['HOST_NGC_NAME'] = ngc
+
 
     # ADD EXISTING SAGA SPECTRA TO FILE
     sagaspec = SAGACAT.load()
-    sqltable = saga_tools.add_saga_spec(sagaspec,sqltable)
+    if not nosaga:
+        sqltable = saga_tools.add_saga_spec(sagaspec,sqltable)
 
     # SET REMOVE FLAGS
     rmv = REMOVELIST.load()
@@ -213,12 +290,15 @@ def create_base_catalog(nsaid, host,nowise,noML):
     print 'Cleaning on PhotoFlags'
     sqltable = saga_tools.photoflags(addlst,sqltable)
 
+
+
+
     # FIX MAJOR PROBLEM SPECTRA BY HAND
     sqltable = fix_byhand.fix_basecats(sqltable)
 
-#    sqltable = saga_tools.fill_sats_array(sqltable)
-#    sqltable = saga_tools.repeat_sat_cleanup(sqltable)
-
+    # FIX SATS ID BY HAND
+    clean_sagaspec = CLEAN.load()
+    sqltablle = fix_byhand.sat_hack(nsaid,sqltable,clean_sagaspec)
 
     print
     return sqltable
