@@ -62,6 +62,36 @@ def run_query(flagged_obs_hosts=False):
         run_casjob(qry, 'sql_nsa{}'.format(nid))
 
 
+##################################  
+def run_objects(flagged_obs_hosts=False):
+    """
+    Send casjob queries for each host
+
+    Parameters
+    ----------
+    flagged_obs_hosts : bool, optional
+
+    Returns
+    -------
+    Downloads host files into sql files located in SAGADIR/hosts
+
+    """
+
+    nsa_objs = [154119,129461,21709,154119,145729,145554,45756 ]
+    ra_objs  = [20.445,21.1989,349.76993,20.44500,224.59449, 221.23300,225.29681]    
+    dec_objs = [5.25685,9.53889,-8.48509 ,5.25685,-1.09102,1.95500,1.70199]
+
+    # FOR EACH HOST, DOWNLOAD SQL QUERY      
+    for nid,r,d in zip(nsa_objs,ra_objs,dec_objs):
+
+        print nid
+
+        # CREATE SQL QUERY
+        qry = construct_sdss_query(nid, r, d)
+        print qry
+        run_casjob(qry, 'sql_nsa{}'.format(nid))
+
+
 
 ##################################  
 def run_casjob(query, outname):
@@ -134,10 +164,12 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
     p.ra as RA, p.dec as DEC,
     p.type as PHOTPTYPE,  dbo.fPhotoTypeN(p.type) as PHOT_SG,
 
-    p.flags as FLAGS,
+    p.flags as FLAGS, p.clean,
     flags & dbo.fPhotoFlags('SATURATED') as SATURATED,
     flags & dbo.fPhotoFlags('BAD_COUNTS_ERROR') as BAD_COUNTS_ERROR,
     flags & dbo.fPhotoFlags('BINNED1') as BINNED1,
+    flags & dbo.fPhotoFlags('TOO_FEW_GOOD_DETECTIONS') as TOO_FEW_GOOD_DETECTIONS,
+
 
     p.modelMag_u as u, p.modelMag_g as g, p.modelMag_r as r,p.modelMag_i as i,p.modelMag_z as z,
     p.modelMagErr_u as u_err, p.modelMagErr_g as g_err,
@@ -186,6 +218,7 @@ def construct_sdss_query(outname, ra, dec, radius=1.0):
     ISNULL(w.H_m_2mass,9999) as H, ISNULL(w.h_msig_2mass,9999) as HERR, 
     ISNULL(w.k_m_2mass,9999) as K, ISNULL(w.k_msig_2mass,9999) as KERR,
 
+    s.survey, 
     ISNULL(s.z, -1) as SPEC_Z, ISNULL(s.zErr, -1) as SPEC_Z_ERR, ISNULL(s.zWarning, -1) as SPEC_Z_WARN, 
     ISNULL(pz.z,-1) as PHOTOZ, ISNULL(pz.zerr,-1) as PHOTOZ_ERR
 
